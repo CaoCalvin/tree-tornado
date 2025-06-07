@@ -1,0 +1,7 @@
+{
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.diagnosticMode": "workspace",
+    "python.languageServer": "Pylance",
+    "window.autoDetectColorScheme": true,
+
+}

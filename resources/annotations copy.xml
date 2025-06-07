@@ -1,0 +1,857 @@
+<?xml version="1.0" encoding="utf-8"?>
+<annotations>
+  <version>1.1</version>
+  <meta>
+    <project>
+      <id>13</id>
+      <name>treefall</name>
+      <bugtracker></bugtracker>
+      <created>2025-05-29 17:49:59.645058+00:00</created>
+      <updated>2025-05-30 15:43:41.277087+00:00</updated>
+      <tasks>
+        <task>
+          <id>40</id>
+          <name>crozier</name>
+          <size>1</size>
+          <mode>annotation</mode>
+          <overlap>0</overlap>
+          <bugtracker></bugtracker>
+          <created>2025-05-30 13:53:15.135666+00:00</created>
+          <updated>2025-05-30 14:24:43.084639+00:00</updated>
+          <subset>default</subset>
+          <start_frame>0</start_frame>
+          <stop_frame>0</stop_frame>
+          <frame_filter></frame_filter>
+          <segments>
+            <segment>
+              <id>26</id>
+              <start>0</start>
+              <stop>0</stop>
+              <url>http://localhost:8080/api/jobs/26</url>
+            </segment>
+          </segments>
+          <owner>
+            <username>cao</username>
+            <email>caocalvin@outlook.com</email>
+          </owner>
+          <assignee></assignee>
+        </task>
+        <task>
+          <id>41</id>
+          <name>centreglassville</name>
+          <size>1</size>
+          <mode>annotation</mode>
+          <overlap>0</overlap>
+          <bugtracker></bugtracker>
+          <created>2025-05-30 13:55:27.788205+00:00</created>
+          <updated>2025-05-30 15:43:41.271739+00:00</updated>
+          <subset>default</subset>
+          <start_frame>0</start_frame>
+          <stop_frame>0</stop_frame>
+          <frame_filter></frame_filter>
+          <segments>
+            <segment>
+              <id>27</id>
+              <start>0</start>
+              <stop>0</stop>
+              <url>http://localhost:8080/api/jobs/27</url>
+            </segment>
+          </segments>
+          <owner>
+            <username>cao</username>
+            <email>caocalvin@outlook.com</email>
+          </owner>
+          <assignee></assignee>
+        </task>
+        <task>
+          <id>42</id>
+          <name>dugwal</name>
+          <size>10</size>
+          <mode>annotation</mode>
+          <overlap>0</overlap>
+          <bugtracker></bugtracker>
+          <created>2025-05-30 13:57:10.978449+00:00</created>
+          <updated>2025-05-30 14:25:05.088854+00:00</updated>
+          <subset>default</subset>
+          <start_frame>0</start_frame>
+          <stop_frame>9</stop_frame>
+          <frame_filter></frame_filter>
+          <segments>
+            <segment>
+              <id>31</id>
+              <start>0</start>
+              <stop>9</stop>
+              <url>http://localhost:8080/api/jobs/31</url>
+            </segment>
+          </segments>
+          <owner>
+            <username>cao</username>
+            <email>caocalvin@outlook.com</email>
+          </owner>
+          <assignee></assignee>
+        </task>
+        <task>
+          <id>43</id>
+          <name>gooseberry</name>
+          <size>4</size>
+          <mode>annotation</mode>
+          <overlap>0</overlap>
+          <bugtracker></bugtracker>
+          <created>2025-05-30 13:57:45.375797+00:00</created>
+          <updated>2025-05-30 15:04:05.163175+00:00</updated>
+          <subset>default</subset>
+          <start_frame>0</start_frame>
+          <stop_frame>3</stop_frame>
+          <frame_filter></frame_filter>
+          <segments>
+            <segment>
+              <id>28</id>
+              <start>0</start>
+              <stop>3</stop>
+              <url>http://localhost:8080/api/jobs/28</url>
+            </segment>
+          </segments>
+          <owner>
+            <username>cao</username>
+            <email>caocalvin@outlook.com</email>
+          </owner>
+          <assignee></assignee>
+        </task>
+        <task>
+          <id>44</id>
+          <name>gowanmarsh</name>
+          <size>3</size>
+          <mode>annotation</mode>
+          <overlap>0</overlap>
+          <bugtracker></bugtracker>
+          <created>2025-05-30 13:58:08.955136+00:00</created>
+          <updated>2025-05-30 15:15:42.096007+00:00</updated>
+          <subset>default</subset>
+          <start_frame>0</start_frame>
+          <stop_frame>2</stop_frame>
+          <frame_filter></frame_filter>
+          <segments>
+            <segment>
+              <id>29</id>
+              <start>0</start>
+              <stop>2</stop>
+              <url>http://localhost:8080/api/jobs/29</url>
+            </segment>
+          </segments>
+          <owner>
+            <username>cao</username>
+            <email>caocalvin@outlook.com</email>
+          </owner>
+          <assignee></assignee>
+        </task>
+        <task>
+          <id>45</id>
+          <name>kaoskauta</name>
+          <size>2</size>
+          <mode>annotation</mode>
+          <overlap>0</overlap>
+          <bugtracker></bugtracker>
+          <created>2025-05-30 13:58:35.041574+00:00</created>
+          <updated>2025-05-30 14:25:29.337379+00:00</updated>
+          <subset>default</subset>
+          <start_frame>0</start_frame>
+          <stop_frame>1</stop_frame>
+          <frame_filter></frame_filter>
+          <segments>
+            <segment>
+              <id>30</id>
+              <start>0</start>
+              <stop>1</stop>
+              <url>http://localhost:8080/api/jobs/30</url>
+            </segment>
+          </segments>
+          <owner>
+            <username>cao</username>
+            <email>caocalvin@outlook.com</email>
+          </owner>
+          <assignee></assignee>
+        </task>
+        <task>
+          <id>46</id>
+          <name>lacombon</name>
+          <size>2</size>
+          <mode>annotation</mode>
+          <overlap>0</overlap>
+          <bugtracker></bugtracker>
+          <created>2025-05-30 14:04:42.571600+00:00</created>
+          <updated>2025-05-30 14:25:38.015883+00:00</updated>
+          <subset>default</subset>
+          <start_frame>0</start_frame>
+          <stop_frame>1</stop_frame>
+          <frame_filter></frame_filter>
+          <segments>
+            <segment>
+              <id>32</id>
+              <start>0</start>
+              <stop>1</stop>
+              <url>http://localhost:8080/api/jobs/32</url>
+            </segment>
+          </segments>
+          <owner>
+            <username>cao</username>
+            <email>caocalvin@outlook.com</email>
+          </owner>
+          <assignee></assignee>
+        </task>
+        <task>
+          <id>47</id>
+          <name>lacpedro</name>
+          <size>7</size>
+          <mode>annotation</mode>
+          <overlap>0</overlap>
+          <bugtracker></bugtracker>
+          <created>2025-05-30 14:05:08.300143+00:00</created>
+          <updated>2025-05-30 14:25:45.978999+00:00</updated>
+          <subset>default</subset>
+          <start_frame>0</start_frame>
+          <stop_frame>6</stop_frame>
+          <frame_filter></frame_filter>
+          <segments>
+            <segment>
+              <id>33</id>
+              <start>0</start>
+              <stop>6</stop>
+              <url>http://localhost:8080/api/jobs/33</url>
+            </segment>
+          </segments>
+          <owner>
+            <username>cao</username>
+            <email>caocalvin@outlook.com</email>
+          </owner>
+          <assignee></assignee>
+        </task>
+        <task>
+          <id>50</id>
+          <name>jasper</name>
+          <size>1</size>
+          <mode>annotation</mode>
+          <overlap>0</overlap>
+          <bugtracker></bugtracker>
+          <created>2025-05-30 14:06:46.357796+00:00</created>
+          <updated>2025-05-30 14:26:16.975190+00:00</updated>
+          <subset>default</subset>
+          <start_frame>0</start_frame>
+          <stop_frame>0</stop_frame>
+          <frame_filter></frame_filter>
+          <segments>
+            <segment>
+              <id>36</id>
+              <start>0</start>
+              <stop>0</stop>
+              <url>http://localhost:8080/api/jobs/36</url>
+            </segment>
+          </segments>
+          <owner>
+            <username>cao</username>
+            <email>caocalvin@outlook.com</email>
+          </owner>
+          <assignee></assignee>
+        </task>
+        <task>
+          <id>51</id>
+          <name>murray</name>
+          <size>6</size>
+          <mode>annotation</mode>
+          <overlap>0</overlap>
+          <bugtracker></bugtracker>
+          <created>2025-05-30 14:40:52.777621+00:00</created>
+          <updated>2025-05-30 14:49:00.898131+00:00</updated>
+          <subset>default</subset>
+          <start_frame>0</start_frame>
+          <stop_frame>5</stop_frame>
+          <frame_filter></frame_filter>
+          <segments>
+            <segment>
+              <id>37</id>
+              <start>0</start>
+              <stop>5</stop>
+              <url>http://localhost:8080/api/jobs/37</url>
+            </segment>
+          </segments>
+          <owner>
+            <username>cao</username>
+            <email>caocalvin@outlook.com</email>
+          </owner>
+          <assignee></assignee>
+        </task>
+      </tasks>
+      <subsets>default</subsets>
+      <owner>
+        <username>cao</username>
+        <email>caocalvin@outlook.com</email>
+      </owner>
+      <assignee></assignee>
+      <labels>
+        <label>
+          <name>unlabeled</name>
+          <color>#2a23bf</color>
+          <type>any</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>fallen</name>
+          <color>#c71933</color>
+          <type>any</type>
+          <attributes>
+            <attribute>
+              <name>is_crowd</name>
+              <mutable>False</mutable>
+              <input_type>checkbox</input_type>
+              <default_value></default_value>
+              <values></values>
+            </attribute>
+          </attributes>
+        </label>
+        <label>
+          <name>other</name>
+          <color>#ffcc33</color>
+          <type>any</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>upright</name>
+          <color>#b7f2a6</color>
+          <type>any</type>
+          <attributes>
+          </attributes>
+        </label>
+        <label>
+          <name>incomplete</name>
+          <color>#b25050</color>
+          <type>any</type>
+          <attributes>
+          </attributes>
+        </label>
+      </labels>
+    </project>
+    <dumped>2025-05-30 15:59:13.870042+00:00</dumped>
+  </meta>
+  <image id="0" name="22_Crozier_461000_5385000.tif" subset="default" task_id="40" width="10000" height="10000">
+    <polygon label="other" source="file" occluded="0" points="2042.24,9710.80;2043.61,9697.52;2059.31,9698.64;2076.13,9708.73;2090.71,9717.70;2103....
+    </polygon>
+    <polygon label="other" source="file" occluded="0" points="933.76,0.46;933.76,49.30;926.78,88.84;903.53,116.75;894.22,153.96;903.53,191.17;919.8...
+    <box label="upright" source="file" occluded="0" xtl="6256.60" ytl="1904.65" xbr="6789.36" ybr="2445.13" z_order="3">
+    </box>
+    <polygon label="fallen" source="file" occluded="0" points="6894.72,9892.22;6875.65,9892.22;6858.83,9893.34;6853.22,9911.29;6862.20,9926.99;6881...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2068.42,2847.14;2041.29,2835.51;2016.09,2852.95;2035.47,2876.21;2041.29,2905.28;2072...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1882.64,4431.33;1861.11,4431.33;1839.57,4431.33;1815.35,4431.33;1791.12,4431.33;1769...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="3002.14,3788.14;3022.33,3823.13;3041.17,3832.55;3039.83,3811.02;3018.29,3802.94;2998...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2668.64,4322.32;2648.45,4314.24;2629.60,4306.17;2608.07,4304.82;2587.88,4310.20;2590...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="4328.89,6569.29;4311.12,6590.29;4294.97,6611.28;4285.28,6633.89;4309.51,6638.74;4333...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8562.65,3318.70;8545.15,3333.50;8531.69,3351.00;8519.58,3368.49;8511.50,3388.68;8499...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <box label="upright" source="file" occluded="0" xtl="4392.44" ytl="5502.92" xbr="4774.50" ybr="6043.41" z_order="-1">
+    </box>
+    <polygon label="fallen" source="file" occluded="0" points="260.40,8638.18;232.94,8625.26;208.72,8612.34;184.49,8609.11;163.50,8622.03;153.81,86...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="5994.95,2975.05;5969.75,3008.00;5938.74,3021.56;5905.79,3027.38;5874.78,3037.07;5905...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1293.97,7512.45;1262.96,7502.76;1235.83,7491.13;1214.51,7512.45;1222.26,7543.46;1249...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="5250.73,2424.64;5275.92,2442.08;5312.75,2444.02;5345.69,2444.02;5372.83,2432.39;5399...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="3347.09,1596.37;3326.10,1635.13;3350.32,1641.60;3366.47,1622.21;3377.78,1599.60;3385...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2761.50,4168.89;2746.70,4146.01;2730.55,4131.20;2709.01,4123.13;2694.21,4108.32;2674...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8337.88,3586.53;8320.39,3599.98;8315.00,3622.86;8335.19,3617.48;8345.96,3599.98" z_o...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="5812.77,2157.18;5810.83,2194.01;5801.14,2225.02;5795.32,2256.03;5820.52,2275.41;5845...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="3277.16,1298.56;3256.17,1317.94;3241.63,1340.55;3236.79,1364.77;3265.86,1366.39;3278...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="7582.22,2597.13;7558.96,2616.51;7526.02,2628.13;7496.95,2637.83;7464.00,2643.64;7436...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <box label="upright" source="file" occluded="0" xtl="6775.24" ytl="2918.17" xbr="7308.00" ybr="3458.66" z_order="1">
+    </box>
+    <polygon label="fallen" source="file" occluded="0" points="9593.81,7116.96;9580.89,7137.95;9559.89,7155.72;9538.90,7168.64;9529.20,7191.25;9561...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="upright" source="file" occluded="0" points="6125.57,7274.07;6096.50,7277.95;6098.44,7314.77;6110.07,7345.78;6108.13,7374.85;608...
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="4356.02,1248.49;4335.02,1263.03;4356.02,1279.18;4380.25,1280.79;4380.25,1253.34" z_o...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="6576.20,9575.94;6504.42,9606.22;6484.23,9614.07;6468.53,9621.92;6484.23,9635.38;6505...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="7075.77,1107.98;7048.32,1122.52;7040.24,1146.74;7064.47,1151.59;7090.31,1148.36;7106...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="6836.75,1098.29;6815.75,1083.75;6797.98,1101.52;6804.44,1125.75;6825.44,1141.90;6849...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="4167.06,1101.52;4142.83,1098.29;4116.99,1091.83;4092.77,1090.21;4115.38,1103.14;4139...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="3613.09,1963.96;3582.41,1957.50;3556.57,1955.88;3571.10,1976.88;3593.71,1989.80;3619...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="4611.17,2568.05;4582.09,2573.87;4601.47,2597.13;4632.48,2597.13;4659.62,2581.62" z_o...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8579.39,1221.03;8564.86,1242.03;8589.08,1243.65;8613.31,1237.19;8616.54,1212.96" z_o...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1268.84,3789.30;1246.23,3805.45;1243.00,3829.67;1238.15,3855.51;1228.46,3881.35;1217...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <box label="upright" source="file" occluded="0" xtl="5690.91" ytl="9531.77" xbr="6316.70" ybr="10000.00" z_order="1">
+    </box>
+    <polygon label="fallen" source="file" occluded="0" points="2751.46,3274.09;2767.61,3325.78;2791.84,3335.47;2804.76,3312.85;2804.76,3285.40;2804...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="968.92,9571.79;954.12,9574.48;939.31,9574.48;927.20,9586.59;920.47,9598.71;907.01,96...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <box label="upright" source="file" occluded="0" xtl="7486.70" ytl="7628.17" xbr="7895.60" ybr="8168.66" z_order="1">
+    </box>
+    <polygon label="fallen" source="file" occluded="0" points="3985.98,3592.99;3964.45,3601.06;3944.26,3611.83;3924.07,3621.25;3905.23,3632.02;3903...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8371.02,2938.23;8340.01,2934.35;8309.00,2934.35;8336.13,2959.54;8363.26,2971.17;8396...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="5921.30,2122.30;5880.60,2197.88;5911.61,2197.88;5940.68,2184.32;5967.81,2166.87;5989...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <box label="upright" source="file" occluded="0" xtl="5294.95" ytl="5980.74" xbr="5827.71" ybr="6521.23" z_order="1">
+    </box>
+    <polygon label="fallen" source="file" occluded="0" points="6016.30,1936.50;5979.15,1928.43;5951.69,1923.58;5929.08,1934.89;5916.16,1955.88;5942...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="upright" source="file" occluded="0" points="9467.48,9719.30;9448.64,9731.41;9429.80,9740.83;9420.38,9759.67;9420.38,9781.21;942...
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="5777.88,2982.80;5748.81,2990.55;5723.62,3008.00;5711.99,3037.07;5741.06,3039.01;5772...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2050.53,3895.89;2011.77,3881.35;1987.54,3879.74;1963.31,3889.43;1976.23,3916.89;1998...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1760.17,4913.16;1738.63,4913.16;1717.10,4911.81;1699.60,4925.27;1698.26,4946.81;1703...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1672.77,4140.89;1645.31,4137.66;1619.47,4134.43;1595.24,4126.36;1575.86,4147.35;1595...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="485.89,9419.16;465.70,9412.44;445.51,9409.74;422.63,9411.09;403.79,9421.86;395.71,94...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="9892.11,4314.84;9866.27,4314.84;9846.89,4330.99;9869.50,4343.91;9893.72,4340.68;9917...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="4225.20,1597.34;4194.51,1595.73;4168.67,1603.80;4147.68,1619.95;4126.68,1642.56;4112...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="upright" source="file" occluded="0" points="3368.67,9121.82;3339.60,9119.88;3312.47,9133.45;3302.78,9162.52;3312.47,9191.59;329...
+    </polygon>
+    <polygon label="upright" source="file" occluded="0" points="8703.75,7897.35;8681.14,7915.12;8658.53,7934.50;8635.92,7944.19;8611.69,7952.26;858...
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8122.94,2984.74;8136.51,3023.50;8150.08,3050.63;8196.59,3056.45;8202.40,3027.38;8215...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="upright" source="file" occluded="0" points="9931.81,9677.57;9918.35,9695.07;9910.28,9716.60;9914.31,9738.14;9927.77,9755.63;994...
+    </polygon>
+    <polygon label="upright" source="file" occluded="0" points="9847.02,9695.07;9825.49,9692.38;9805.30,9691.03;9787.80,9701.80;9774.34,9719.30;977...
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="7991.15,2414.95;7958.21,2414.95;7929.14,2416.89;7905.88,2436.27;7931.07,2453.71;7962...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8363.26,2186.26;8345.82,2211.45;8318.69,2225.02;8287.68,2225.02;8262.48,2209.51;8246...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="upright" source="file" occluded="0" points="9102.67,7325.95;9080.06,7335.64;9078.44,7361.48;9099.44,7374.40;9126.89,7374.40;915...
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2495.02,4479.79;2480.21,4463.64;2460.02,4460.94;2455.99,4481.13;2460.02,4504.01;2469...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="4927.49,9599.49;4908.43,9600.61;4890.48,9600.61;4873.66,9603.98;4871.41,9621.92;4889...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <box label="upright" source="file" occluded="0" xtl="7006.83" ytl="9545.00" xbr="7539.59" ybr="9945.94" z_order="1">
+    </box>
+    <box label="upright" source="file" occluded="0" xtl="4158.16" ytl="2935.69" xbr="5233.50" ybr="3476.17" z_order="1">
+    </box>
+    <polygon label="fallen" source="file" occluded="0" points="6567.45,8254.73;6557.76,8287.68;6553.88,8316.75;6550.01,8345.82;6575.20,8320.63;6584...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="5509.49,6654.89;5485.27,6664.58;5462.66,6683.96;5452.97,6706.57;5462.66,6735.64;5486...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8222.56,8014.41;8193.49,8010.53;8176.05,8035.73;8195.43,8060.92;8224.50,8057.05" z_o...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="7967.10,3556.65;7965.75,3531.08;7946.91,3523.00;7925.37,3529.73;7906.53,3544.53;7885...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <box label="upright" source="file" occluded="0" xtl="4878.48" ytl="6258.59" xbr="5282.00" ybr="6799.07" z_order="1">
+    </box>
+    <polygon label="fallen" source="file" occluded="0" points="3039.75,1586.04;3062.36,1571.50;3080.13,1553.74;3094.66,1532.74;3102.74,1506.90;3107...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="upright" source="file" occluded="0" points="9384.04,9389.55;9361.16,9389.56;9339.62,9390.90;9324.82,9405.71;9323.47,9428.59;932...
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="358.92,9090.39;337.92,9104.93;362.15,9108.16;386.37,9096.85;400.91,9075.86" z_order=...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1321.10,8202.40;1317.23,8231.47;1321.10,8262.48;1340.48,8239.23;1350.17,8210.16" z_o...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1267.82,9829.41;1259.97,9810.35;1253.24,9794.64;1234.17,9791.28;1217.35,9789.04;1217...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2042.45,3301.55;2040.84,3329.01;2058.60,3354.85;2082.83,3369.38;2105.44,3379.07;2108...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8938.15,3629.59;8917.96,3620.17;8896.43,3618.83;8872.20,3618.83;8850.67,3620.17;8835...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1966.54,3115.82;1966.54,3141.66;1966.54,3170.73;1968.16,3204.65;1969.77,3230.49;1976...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2183.12,8564.37;2158.90,8565.99;2136.29,8582.14;2150.82,8603.13;2176.66,8599.90;2200...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="9692.58,4911.90;9680.24,4924.24;9691.46,4941.06;9704.92,4952.28;9720.62,4959.01;9729...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="upright" source="file" occluded="0" points="9767.59,8256.47;9635.80,8264.23;9606.73,8258.41;9566.03,8250.66;9519.51,8246.78;948...
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="54.48,9538.25;28.64,9547.94;6.03,9557.63;0.00,9560.04;0.00,9630.81;9.26,9641.61;33.4...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1719.60,8176.76;1695.38,8191.29;1679.23,8213.90;1669.54,8236.51;1664.69,8262.36;1685...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="3561.41,1477.83;3537.19,1489.13;3512.96,1495.59;3488.73,1503.67;3506.50,1521.43;3535...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2124.62,2166.88;2099.43,2184.32;2080.05,2207.57;2052.92,2219.20;2041.29,2246.34;2062...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <box label="upright" source="file" occluded="0" xtl="5904.16" ytl="8797.40" xbr="6358.90" ybr="9438.40" z_order="1">
+    </box>
+    <polygon label="upright" source="file" occluded="0" points="9877.97,9341.10;9855.10,9343.80;9833.56,9346.49;9824.14,9368.02;9822.79,9388.21;984...
+    </polygon>
+    <polygon label="upright" source="file" occluded="0" points="5003.43,7324.46;4980.17,7345.78;4976.30,7374.85;4953.04,7396.17;4958.85,7425.24;497...
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8411.71,2812.25;8409.78,2843.26;8403.96,2876.21;8396.21,2907.22;8392.33,2938.23;8417...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2931.54,1250.11;2931.54,1288.87;2931.54,1314.71;2934.77,1338.93;2952.54,1317.94;2959...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="4407.70,1555.35;4398.01,1526.28;4389.94,1502.05;4377.02,1479.44;4351.17,1466.52;4323...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="5426.80,1329.24;5428.42,1353.47;5428.42,1379.31;5446.18,1397.08;5462.33,1376.08;5462...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <box label="upright" source="file" occluded="0" xtl="8291.90" ytl="57.76" xbr="8824.66" ybr="598.25" z_order="1">
+    </box>
+    <polygon label="upright" source="file" occluded="0" points="6893.04,7498.88;6860.10,7498.88;6873.66,7586.10;6904.67,7586.10;6933.74,7580.28;694...
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2694.42,2110.67;2675.04,2141.68;2659.53,2168.81;2644.03,2195.95;2630.46,2225.02;2651...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="upright" source="file" occluded="0" points="9875.15,1023.57;9854.96,1014.15;9842.85,1032.99;9846.89,1058.56;9857.65,1076.06;983...
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="5743.03,5726.23;5725.26,5779.53;5743.03,5797.30;5764.03,5782.76;5786.64,5768.22;5788...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1545.00,2420.38;1531.91,2413.84;1517.89,2408.23;1513.22,2424.12;1514.15,2440.94;1516...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1409.83,2275.45;1356.34,2296.38;1391.22,2305.68;1428.43,2317.31" z_order="1">
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="7049.93,1949.42;7027.32,1960.73;7017.63,1983.34;7016.02,2007.57;7040.24,2005.95;7058...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2416.34,1347.01;2393.73,1356.70;2372.73,1369.62;2395.34,1384.16;2419.57,1376.08;2442...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="upright" source="file" occluded="0" points="8451.80,7961.96;8416.27,7961.95;8395.27,7976.49;8395.27,8002.33;8404.96,8024.94;842...
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="3669.94,6939.14;3652.18,6958.52;3648.95,6982.75;3639.26,7005.36;3663.48,7010.20;3676...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="upright" source="file" occluded="0" points="5889.13,7448.49;5863.93,7429.11;5838.74,7444.62;5832.92,7473.69;5834.86,7506.64;582...
+    </polygon>
+    <polygon label="upright" source="file" occluded="0" points="8996.56,7699.67;9001.40,7696.44;8975.56,7709.36;8961.03,7731.97;8956.18,7756.20;895...
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8844.26,1741.08;8824.88,1758.85;8813.57,1783.07;8803.88,1805.68;8828.11,1810.53;8853...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2152.28,3356.46;2124.82,3351.62;2118.36,3375.84;2118.36,3403.30;2119.97,3430.75;2124...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8359.39,2595.19;8330.32,2593.25;8305.12,2608.75;8289.62,2633.95;8314.81,2651.39;8345...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="4236.50,1921.97;4241.35,1947.81;4244.58,1972.04;4246.20,1997.88;4233.28,2022.10;4251...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1930.82,2707.60;1901.75,2717.29;1874.61,2728.91;1851.36,2750.23;1880.43,2756.05;1913...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2652.94,3451.75;2657.79,3482.44;2661.02,3513.12;2662.63,3542.19;2662.63,3569.65;2685...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="3574.98,8451.32;3550.75,8467.47;3528.14,8478.77;3523.30,8503.00;3545.91,8514.30;3570...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1470.80,4639.95;1461.38,4662.83;1456.00,4683.01;1454.65,4704.55;1456.00,4726.08;1458...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8338.07,2754.11;8301.24,2750.23;8270.24,2748.30;8245.04,2732.79;8233.41,2761.86;8260...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="6219.79,1565.04;6247.25,1568.27;6271.48,1573.12;6295.70,1574.73;6276.32,1558.58;6252...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="5364.90,9266.38;5363.78,9286.57;5363.78,9305.64;5363.78,9323.59;5360.42,9342.65;5354...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="6987.23,2633.95;6958.16,2626.20;6932.97,2645.58;6915.53,2684.34;6903.90,2711.47;6909...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="3622.78,1306.63;3613.09,1329.24;3603.40,1351.85;3593.71,1376.08;3584.02,1400.31;3595...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="9298.09,1363.16;9273.86,1368.00;9248.02,1379.31;9228.64,1395.46;9252.87,1410.00;9278...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="32.53,9304.93;33.31,9304.93;24.75,9314.28;16.18,9324.40;11.50,9335.31;20.85,9343.09;...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="3370.92,3648.17;3353.42,3634.71;3335.92,3622.59;3315.73,3621.25;3313.04,3641.44;3329...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1357.67,3119.05;1352.82,3143.27;1344.75,3170.73;1338.29,3194.96;1351.21,3215.95;1375...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <box label="upright" source="file" occluded="0" xtl="4194.68" ytl="5730.61" xbr="4727.44" ybr="6271.10" z_order="1">
+    </box>
+    <box label="upright" source="file" occluded="0" xtl="4454.54" ytl="1897.50" xbr="4987.30" ybr="2437.99" z_order="1">
+    </box>
+    <polygon label="upright" source="file" occluded="0" points="9097.02,8425.09;9089.26,8454.16;9089.26,8487.11;9162.91,8756.50;9184.23,8735.18;918...
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="3243.33,4189.08;3231.21,4207.92;3227.18,4229.45;3221.79,4263.10;3220.45,4283.29;3240...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2913.77,1794.38;2889.55,1789.53;2884.70,1765.31;2876.63,1739.47;2863.71,1718.47;2847...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2114.13,4463.63;2111.44,4442.10;2093.94,4431.33;2073.76,4425.95;2057.61,4440.76;2053...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8405.90,2339.36;8372.95,2339.36;8343.88,2354.87;8359.39,2380.06;8396.21,2380.06;8427...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="5316.98,1167.74;5294.37,1151.59;5271.76,1140.28;5247.53,1138.67;5244.30,1162.89;5266...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8653.97,2312.23;8628.78,2327.73;8607.46,2350.99;8595.83,2378.12;8607.46,2405.26;8636...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8061.71,7563.96;8046.01,7570.69;8033.67,7583.03;8026.94,7598.73;8033.67,7615.55;8052...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="6071.21,8598.61;6043.75,8598.61;6019.53,8600.22;5996.92,8611.53;6011.45,8634.14;6035...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="4689.04,6863.23;4666.43,6850.31;4655.13,6877.77;4655.13,6905.22;4655.13,6931.06;4656...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <box label="upright" source="file" occluded="0" xtl="4416.70" ytl="9554.30" xbr="4738.19" ybr="10000.00" z_order="1">
+    </box>
+    <polygon label="upright" source="file" occluded="0" points="8390.43,7579.19;8377.51,7600.18;8395.27,7619.56;8409.81,7642.17;8427.58,7661.55;845...
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1974.78,8509.46;1955.40,8525.61;1952.17,8551.45;1973.17,8564.37;1986.09,8541.76;1994...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="64.98,8676.94;47.21,8657.56;22.99,8652.71;3.61,8668.86;-0.00,8674.72;0.00,8732.21;1....
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="3319.15,1776.61;3298.16,1799.22;3283.62,1820.22;3264.24,1836.37;3246.48,1854.14;3225...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="7985.34,2087.41;7917.51,2087.41;7884.56,2087.41;7890.37,2118.42;7925.26,2118.42;7958...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <box label="upright" source="file" occluded="0" xtl="7576.08" ytl="651.10" xbr="8365.60" ybr="1906.00" z_order="1">
+    </box>
+    <polygon label="fallen" source="file" occluded="0" points="2226.18,7993.09;2197.11,8004.72;2181.60,8029.92;2210.68,8037.67;2241.68,8029.92;2251...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="4395.87,9331.44;4379.05,9334.80;4364.47,9347.14;4349.89,9357.23;4333.06,9365.08;4317...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="4415.32,3714.11;4393.78,3720.84;4380.33,3736.99;4396.48,3753.15;4416.66,3749.11;4432...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1544.83,4146.01;1525.98,4135.24;1505.80,4131.20;1486.95,4140.62;1500.41,4156.77;1521...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="upright" source="file" occluded="0" points="9014.84,9751.11;9012.90,9780.18;8997.40,9807.32;8966.39,9817.01;8937.32,9820.88;890...
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="6672.65,9351.62;6637.88,9352.75;6663.68,9366.20;6681.62,9366.20" z_order="1">
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <box label="upright" source="file" occluded="0" xtl="4443.10" ytl="8489.29" xbr="5029.40" ybr="9029.78" z_order="1">
+    </box>
+    <polygon label="fallen" source="file" occluded="0" points="8899.17,1610.26;8879.79,1626.41;8895.94,1645.79;8920.17,1650.64;8937.93,1668.40;8963...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="5309.95,9778.94;5309.95,9775.58;5292.00,9769.97;5286.39,9787.91;5296.49,9804.74;5307...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1433.12,4983.14;1414.28,4992.57;1394.09,4997.95;1369.86,5006.02;1352.36,5016.79;1340...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2735.31,3937.88;2717.55,4018.63;2724.01,4042.86;2732.08,4067.09;2738.54,4091.31;2807...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1945.90,4272.52;1929.75,4257.72;1906.87,4249.64;1886.68,4242.91;1865.15,4238.87;1859...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="495.83,1268.43;470.25,1300.99;451.65,1331.22;460.95,1366.10;470.25,1400.99;444.67,13...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="3583.56,3447.63;3555.30,3447.63;3536.46,3455.71;3523.00,3473.20;3539.15,3493.39;3563...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="4422.56,7005.36;4403.18,7024.74;4387.03,7044.12;4403.18,7063.50;4429.02,7060.27;4448...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="upright" source="file" occluded="0" points="8843.13,8289.42;8816.00,8304.93;8812.12,8334.00;8814.06,8363.07;8814.06,8396.02;881...
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="4724.58,7019.89;4708.42,7044.12;4693.89,7065.11;4685.81,7089.34;4714.88,7090.96;4742...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="9949.85,3588.54;9926.97,3585.85;9906.78,3591.24;9921.58,3608.73;9944.46,3614.12;9963...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8735.37,2738.60;8706.30,2734.73;8702.42,2765.74;8721.81,2788.99;8750.88,2800.62;8779...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="4788.85,1345.39;4792.08,1372.85;4800.16,1398.69;4821.16,1385.77;4826.00,1361.54;4847...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="7999.40,3404.56;7977.86,3401.87;7957.67,3403.22;7938.83,3411.29;7942.87,3431.48;7959...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="3981.65,6792.17;3965.50,6811.55;3946.12,6832.55;3947.73,6856.77;3973.57,6858.39;3992...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2635.99,1082.14;2611.76,1085.37;2589.15,1096.68;2584.30,1120.90;2610.14,1127.36;2632...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="9017.07,1729.78;8994.46,1739.47;8970.23,1749.16;8954.08,1768.54;8978.31,1770.15;9002...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8500.06,3089.63;8483.91,3105.78;8475.84,3124.62;8465.07,3143.46;8452.96,3160.96;8448...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2499.51,3889.43;2478.52,3876.51;2455.91,3886.20;2452.68,3912.04;2452.68,3937.88;2454...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1574.72,1838.22;1549.14,1868.45;1537.51,1903.34;1574.72,1894.03;1600.30,1866.13" z_o...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="7845.80,2744.42;7814.79,2750.23;7789.59,2771.55;7776.03,2800.62;7807.04,2802.56;7832...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8367.82,7621.18;8345.21,7635.71;8345.21,7663.17;8362.97,7685.78;8377.51,7706.78;8401...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="8638.47,2942.10;8619.09,2965.36;8593.89,2980.86;8562.88,2998.31;8537.69,3017.69;8514...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="3575.95,1224.26;3556.57,1201.65;3533.96,1185.50;3512.96,1169.35;3488.73,1174.20;3496...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="5121.91,3645.47;5120.56,3665.66;5120.56,3687.20;5120.56,3710.08;5121.91,3731.61;5140...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2530.01,4238.87;2509.82,4226.76;2489.63,4214.65;2470.79,4199.84;2447.91,4194.46;2430...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="3114.85,3314.47;3089.01,3314.47;3087.39,3338.70;3097.08,3362.92;3106.77,3385.53;3106...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="7942.70,3009.93;7919.45,2982.80;7896.19,2961.48;7867.12,2944.04;7836.11,2934.35;7810...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="5781.01,9346.02;5755.21,9346.02;5737.26,9346.02;5718.20,9346.02;5698.01,9348.26;5678...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+  </image>
+  <image id="1" name="Glassville_ortho_5cm16.TIF" subset="default" task_id="41" width="10000" height="8293">
+    <polygon label="other" source="file" occluded="0" points="3988.79,5417.01;3975.70,5427.29;3968.22,5439.44;3969.16,5454.39;3981.31,5464.67;3995....
+    </polygon>
+    <box label="upright" source="file" occluded="0" xtl="9322.76" ytl="4469.52" xbr="9645.93" ybr="4750.54" z_order="-1">
+    </box>
+    <polygon label="other" source="file" occluded="0" points="3735.23,4257.03;3719.08,4274.52;3708.31,4297.40;3700.24,4316.25;3713.70,4339.13;3735....
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2284.55,3965.32;2321.36,3999.08;2334.88,4012.49;2340.56,4021.09;2343.38,4029.56;2341...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="5583.11,4779.75;5569.39,4790.20;5555.93,4803.65;5543.82,4814.42;5535.74,4826.53;5529...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="5719.56,5282.11;5710.71,5267.98;5697.25,5255.87;5683.79,5241.06;5670.33,5227.61;5659...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="1471.33,5138.26;1501.32,5139.99;1514.77,5143.78;1535.09,5156.76;1545.98,5164.91;1550...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="other" source="file" occluded="0" points="2401.46,4578.56;2319.36,4641.82;2221.12,4707.76;2209.00,4688.92;2188.81,4683.54;2167....
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="381.56,4640.30;389.07,4646.29;393.22,4653.27;394.91,4661.74;401.68,4677.55;403.27,46...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="5384.36,5132.67;5395.77,5141.47;5407.88,5149.54;5417.31,5160.31;5429.42,5169.73;5438...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="2414.67,4727.41;2418.51,4736.53;2421.84,4777.66;2421.27,4804.75;2423.60,4815.59;2428...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <polygon label="fallen" source="file" occluded="0" points="5457.97,5310.73;5459.03,5293.55;5463.07,5276.06;5468.45,5259.91;5479.22,5249.14;5492...
+      <attribute name="is_crowd"></attribute>
+    </polygon>
+    <box label="upright" source="file" occluded="0" xtl="2384.95" ytl="2420.39" xbr="3741.28" ybr="3500.44" z_order="3">
+    </box>
+
+  ...

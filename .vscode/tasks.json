@@ -1,0 +1,17 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "JupyText Sync",
+      "type": "shell",
+      "command": "jupytext --sync ${C:/Users/dbutt7/AppData/Local/miniconda3/envs/torch-env/Scripts/jupytext.exe}",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "never"
+      }
+    }
+  ]
+}
