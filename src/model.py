@@ -251,13 +251,23 @@ class ImageLoggingCallback(pl.Callback):
             return False
         
         return all(count >= self.num_samples_per_combo for count in self.combination_counts.values())
-
+    
     def on_validation_epoch_end(self, trainer, pl_module):
-        # Only log images at the end of the first validation epoch
+        # Skip the callback during the sanity check
+        if trainer.sanity_checking:
+            return
+
+        # Only log images at the end of the first real validation epoch
         if trainer.current_epoch != 0:
             return
 
-        val_loader = trainer.val_dataloaders[0]
+        # Correctly get the validation dataloader
+        val_dataloaders = trainer.val_dataloaders
+        if isinstance(val_dataloaders, list):
+            val_loader = val_dataloaders[0]
+        else:
+            val_loader = val_dataloaders
+
         device = pl_module.device
         images_to_log = []
 
@@ -267,7 +277,6 @@ class ImageLoggingCallback(pl.Callback):
         pl_module.eval()
         with torch.no_grad():
             for batch in val_loader:
-                # Break early if we've found enough images for every combination
                 if self._is_done():
                     break
 
@@ -280,13 +289,9 @@ class ImageLoggingCallback(pl.Callback):
                     gt_mask = gt_masks[i]
                     present_classes = frozenset(torch.unique(gt_mask).cpu().numpy())
 
-                    # --- MODIFICATION START ---
-                    # If this is a target combination and we haven't logged enough samples yet
                     current_count = self.combination_counts.get(present_classes, 0)
                     if present_classes in self.target_combinations and current_count < self.num_samples_per_combo:
-                        # Increment count for this combination
                         self.combination_counts[present_classes] = current_count + 1
-                    # --- MODIFICATION END ---
 
                         image_vis = (images[i].unsqueeze(0) * std + mean).clamp(0, 1)
                         image_vis_np = (image_vis.squeeze(0).permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
@@ -294,11 +299,8 @@ class ImageLoggingCallback(pl.Callback):
                         gt_mask_np = gt_mask.cpu().numpy().astype(np.uint8)
                         pred_mask_np = pred_masks[i].cpu().numpy().astype(np.uint8)
                         
-                        # --- MODIFICATION START ---
-                        # Create a more detailed caption including the sample number
                         class_names = [self.class_labels[c] for c in sorted(list(present_classes))]
                         caption = f"Classes: {class_names}, Sample #{current_count + 1}"
-                        # --- MODIFICATION END ---
 
                         wandb_image = wandb.Image(
                             image_vis_np,
@@ -308,13 +310,21 @@ class ImageLoggingCallback(pl.Callback):
                                 "prediction": {"mask_data": pred_mask_np, "class_labels": self.class_labels},
                             },
                         )
-                        images_to_log.append(wandb_image)
+                        # --- START: MODIFICATION ---
+                        # Store the caption and the image object together in a tuple
+                        images_to_log.append((caption, wandb_image))
+                        # --- END: MODIFICATION ---
 
         if images_to_log:
-            # Sort by caption to have a consistent order in the UI
-            images_to_log.sort(key=lambda img: img.caption)
-            trainer.logger.experiment.log({"Validation Samples": images_to_log})
-
+            # --- START: MODIFICATION ---
+            # Sort the list of tuples based on the caption (the first element)
+            images_to_log.sort(key=lambda item: item[0])
+            
+            # Extract just the image objects from the sorted list for logging
+            final_images = [item[1] for item in images_to_log]
+            
+            trainer.logger.experiment.log({"Validation Samples": final_images})
+            # --- END: MODIFICATION ---
 class CamVidModel(pl.LightningModule):
     def __init__(self, arch, encoder_name, in_channels, out_classes, **kwargs):
         super().__init__()
@@ -515,7 +525,7 @@ if __name__ == '__main__':
 
     # Architecture and encoder parameters
     ARCH = "SegFormer"
-    ENCODER_NAME = "mit_b3"
+    ENCODER_NAME = "mit_b0"
     ENCODER_WEIGHTS = "imagenet"
 
     SEED = 42
