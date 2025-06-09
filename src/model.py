@@ -34,6 +34,7 @@ from torch.optim import lr_scheduler
 import math
 from pytorch_lightning.callbacks import RichProgressBar
 import logging
+from itertools import chain, combinations
 import wandb
 import os
 class Cls(Enum):
@@ -169,19 +170,20 @@ def get_training_augmentation(input_size=512):
     ])
     try:
         # Log the string representation of the new, improved pipeline.
-        wandb.log({"training_transforms": str(transform)})
+        wandb_logger.log({"training_transforms": str(transform)})
     except Exception as e:
         print("W&B logging not available (or not initialized):", e)
-    return transform
-
+    return transform, str(transform)
 
 
 def get_validation_augmentation():
-    return A.Compose([
+    transform = A.Compose([
         A.Normalize(mean=(0.485, 0.456, 0.406), 
                     std=(0.229, 0.224, 0.225)),
         ToTensorV2(),
     ])
+
+    return transform, str(transform)
 
 def visualize(**images):
     """Plot images in one row."""
@@ -212,6 +214,106 @@ def visualize(**images):
             for cls_member in Cls:
                 color_mask[img == cls_member.value] = cls_member.rgb_color
             plt.imshow(color_mask)
+
+class ImageLoggingCallback(pl.Callback):
+    """
+    Logs a batch of validation samples to W&B, including the input image,
+    ground truth mask, and the model's predicted mask.
+
+    This callback finds a specified number of images for each unique
+    combination of classes present in the ground truth masks of the
+    validation set.
+    """
+    # --- MODIFICATION START ---
+    def __init__(self, num_samples_per_combo=1):
+        """
+        Args:
+            num_samples_per_combo (int): The number of images to log for each
+                                         unique class combination.
+        """
+        super().__init__()
+        # Store the number of samples to log for each combination
+        self.num_samples_per_combo = num_samples_per_combo
+        self.class_labels = {cls.value: cls.name for cls in Cls}
+        
+        # Dynamically generate all possible non-empty subsets of class values
+        class_values = [cls.value for cls in Cls]
+        all_combinations = chain.from_iterable(combinations(class_values, r) for r in range(1, len(class_values) + 1))
+        self.target_combinations = {frozenset(combo) for combo in all_combinations}
+        
+        # Use a dictionary to count how many we've logged for each combination
+        self.combination_counts = {}
+    # --- MODIFICATION END ---
+
+    def _is_done(self):
+        """Checks if we have logged the desired number of samples for all combinations."""
+        if len(self.combination_counts) < len(self.target_combinations):
+            return False
+        
+        return all(count >= self.num_samples_per_combo for count in self.combination_counts.values())
+
+    def on_validation_epoch_end(self, trainer, pl_module):
+        # Only log images at the end of the first validation epoch
+        if trainer.current_epoch != 0:
+            return
+
+        val_loader = trainer.val_dataloaders[0]
+        device = pl_module.device
+        images_to_log = []
+
+        mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(1, 3, 1, 1)
+        std = torch.tensor([0.229, 0.224, 0.225], device=device).view(1, 3, 1, 1)
+
+        pl_module.eval()
+        with torch.no_grad():
+            for batch in val_loader:
+                # Break early if we've found enough images for every combination
+                if self._is_done():
+                    break
+
+                images, gt_masks = batch
+                images, gt_masks = images.to(device), gt_masks.to(device)
+                logits = pl_module(images)
+                pred_masks = torch.argmax(logits, dim=1)
+
+                for i in range(images.shape[0]):
+                    gt_mask = gt_masks[i]
+                    present_classes = frozenset(torch.unique(gt_mask).cpu().numpy())
+
+                    # --- MODIFICATION START ---
+                    # If this is a target combination and we haven't logged enough samples yet
+                    current_count = self.combination_counts.get(present_classes, 0)
+                    if present_classes in self.target_combinations and current_count < self.num_samples_per_combo:
+                        # Increment count for this combination
+                        self.combination_counts[present_classes] = current_count + 1
+                    # --- MODIFICATION END ---
+
+                        image_vis = (images[i].unsqueeze(0) * std + mean).clamp(0, 1)
+                        image_vis_np = (image_vis.squeeze(0).permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
+
+                        gt_mask_np = gt_mask.cpu().numpy().astype(np.uint8)
+                        pred_mask_np = pred_masks[i].cpu().numpy().astype(np.uint8)
+                        
+                        # --- MODIFICATION START ---
+                        # Create a more detailed caption including the sample number
+                        class_names = [self.class_labels[c] for c in sorted(list(present_classes))]
+                        caption = f"Classes: {class_names}, Sample #{current_count + 1}"
+                        # --- MODIFICATION END ---
+
+                        wandb_image = wandb.Image(
+                            image_vis_np,
+                            caption=caption,
+                            masks={
+                                "ground_truth": {"mask_data": gt_mask_np, "class_labels": self.class_labels},
+                                "prediction": {"mask_data": pred_mask_np, "class_labels": self.class_labels},
+                            },
+                        )
+                        images_to_log.append(wandb_image)
+
+        if images_to_log:
+            # Sort by caption to have a consistent order in the UI
+            images_to_log.sort(key=lambda img: img.caption)
+            trainer.logger.experiment.log({"Validation Samples": images_to_log})
 
 class CamVidModel(pl.LightningModule):
     def __init__(self, arch, encoder_name, in_channels, out_classes, **kwargs):
@@ -374,25 +476,28 @@ if __name__ == '__main__':
     
     # resplit(base_path, train_frac=0.7, val_frac=0.15, test_frac=0.15)
 
+    training_transform_obj, training_transform_str = get_training_augmentation()
     dataset_train = Dataset(
         image_root=images_path,
         mask_root=masks_path,
         split_file=os.path.join(splits_path, 'train.txt'),
-        transform=get_training_augmentation()  
+        transform=training_transform_obj
     )
+
+    validation_transform_obj, validation_transform_str = get_validation_augmentation()
 
     dataset_val = Dataset(
         image_root=images_path,
         mask_root=masks_path,
         split_file=os.path.join(splits_path, 'val.txt'),
-        transform=get_validation_augmentation()  
+        transform=validation_transform_obj  
     )
 
     dataset_test = Dataset(
         image_root=images_path,
         mask_root=masks_path,
         split_file=os.path.join(splits_path, 'test.txt'),
-        transform=get_validation_augmentation()  
+        transform=validation_transform_obj  
     )
 
 
@@ -451,18 +556,22 @@ if __name__ == '__main__':
         "train_size": len(dataset_train),
         "val_size": len(dataset_val),
         "num_classes": OUT_CLASSES,
+        "training_transform": training_transform_str,
+        "validation_transform": validation_transform_str,
     })
 
     # TODO: Tune number of workers based on system
     train_loader = DataLoader(dataset_train, batch_size=BATCH_SIZE, shuffle=True, num_workers=16, persistent_workers=True, pin_memory=True)
     val_loader = DataLoader(dataset_val, batch_size=BATCH_SIZE, shuffle=False, num_workers=16, persistent_workers=True, pin_memory=True)
 
+    image_logging_callback = ImageLoggingCallback(num_samples_per_combo=3)
+
     trainer = pl.Trainer(
         max_epochs=EPOCHS,
         log_every_n_steps=1,
-        fast_dev_run=False,  # fast_dev_run=True will run only 1 batch for train and val
-        #callbacks=[RichProgressBar()],
-        logger=wandb_logger 
+        fast_dev_run=False,
+        callbacks=[RichProgressBar(), image_logging_callback], 
+        logger=wandb_logger
     )
 
     trainer.fit(
