@@ -420,50 +420,37 @@ def process_images(cvat_xml_path, server_paths_csv_path):
                     chip_has_any_actual_label = False
                     chip_contains_unlabeled_label_type = False
                     
-                    # Gather polygons relevant to this chip
+
                     for ann in annotations_to_use:
-                        # Basic bounding box intersection test for speed
+                        # Use a basic bounding box check to quickly filter irrelevant polygons
                         if not polygon_intersects_bbox(ann["points"], x, y, x + CHIP_SIZE, y + CHIP_SIZE):
                             continue
 
+                        # Handle special "unlabeled" polygons if they are found within the chip
                         if ann["label"] == "unlabeled":
                             chip_contains_unlabeled_label_type = True
+                            # If an "unlabeled" polygon is found, we skip the entire chip, so we can break this loop.
                             break 
-                        
-                        # Convert points to be relative to the chip's origin
-                        relative_points = [[p[0] - x, p[1] - y] for p in ann["points"]]
-                        # Gather polygons relevant to this chip
-                        for ann in annotations_to_use:
-                            # Basic bounding box intersection test for speed
-                            if not polygon_intersects_bbox(ann["points"], x, y, x + CHIP_SIZE, y + CHIP_SIZE):
-                                continue
 
-                            if ann["label"] == "unlabeled":
-                                chip_contains_unlabeled_label_type = True
-                                break 
-                            
-                            # Convert points to be relative to the chip's origin
+                        # If the label is valid for training, process it
+                        if ann["label"] in LABEL_TO_VALUE:
+                            # Convert the polygon's points from full-image coordinates to chip-local coordinates
                             relative_points = [[p[0] - x, p[1] - y] for p in ann["points"]]
-                            
-                            if ann["label"] in LABEL_TO_VALUE:
-                                chip_intersecting_polygons_info.append({
-                                    "points": np.array(relative_points, dtype=np.int32),
-                                    "label": ann["label"],
-                                    "value": LABEL_TO_VALUE[ann["label"]],
-                                    "z_order": ann["z_order"] # <<< ADD THIS LINE
-                                })
-                                if ann["label"] != "unlabeled": 
-                                    chip_has_any_actual_label = True
-                            # else:
-                                # print(f" Warning: Unknown label '{ann['label']}' in image {image_name}. Skipping this annotation for chip.")
-                            if ann["label"] != "unlabeled": # "unlabeled" itself is not an "actual" data label for training
+
+                            # Add the polygon's information to the list for this chip
+                            chip_intersecting_polygons_info.append({
+                                "points": np.array(relative_points, dtype=np.int32),
+                                "label": ann["label"],
+                                "value": LABEL_TO_VALUE[ann["label"]],
+                                "z_order": ann["z_order"]
+                            })
+
+                            # Mark that this chip has at least one valid label
+                            if ann["label"] != "unlabeled":
                                 chip_has_any_actual_label = True
-                        # else: # Should not happen if XML is well-formed and labels are in LABEL_TO_VALUE
-                           # print(f"    Warning: Unknown label '{ann['label']}' in image {image_name}. Skipping this annotation for chip.")
 
-
+                    # After the loop, check if we found an "unlabeled" polygon and need to skip
                     if chip_contains_unlabeled_label_type:
-                        # print(f"    Skipping chip ({x},{y}) for {image_name}: contains 'unlabeled' type polygon.")
                         continue
                     
                     if not chip_has_any_actual_label:
