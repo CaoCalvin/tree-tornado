@@ -122,7 +122,6 @@ def parse_cvat_xml(xml_file):
             "images": []
         }
 
-    # images_annotations = {} # This variable was declared but not used in the original snippet for its intended purpose
     for image_elem in root.findall(".//image"):
         image_id = image_elem.get("id")
         image_name = image_elem.get("name")
@@ -253,16 +252,16 @@ def get_image_full_path(image_name, task_name, server_paths_csv_data):
                     print(f"Image downloaded to {local_path}")
                     return str(local_path)
                 except Exception as e:
-                    print(f"Error downloading image from server: {e}")
+                    raise Exception(f"Error downloading image from server: {e}")
                     return None
             else:
-                print(f"Image {image_name} not found at server path: {potential_server_path}")
+                raise Exception(f"Image {image_name} not found at server path: {potential_server_path}")
         else:
-            print(f"Server path for {task_name} ('{server_folder_path}') is not a recognized file system path.")
+            raise Exception(f"Server path for {task_name} ('{server_folder_path}') is not a recognized file system path.")
     else:
-        print(f"No server path entry found for location: {task_name} in CSV.")
+        raise Exception(f"No server path entry found for location: {task_name} in CSV.")
     
-    print(f"Failed to find image '{image_name}' for task '{task_name}' both locally and on server.")
+    raise Exception(f"Failed to find image '{image_name}' for task '{task_name}' both locally and on server.")
     return None
 
 
@@ -371,18 +370,15 @@ def process_images(cvat_xml_path, server_paths_csv_path):
 
             full_image_path = get_image_full_path(image_name, task_name, server_paths_data)
             if not full_image_path:
-                print(f"    Could not find image '{image_name}'. Skipping.")
-                continue
+                raise Exception(f"    Could not find image '{image_name}'. Skipping.")
 
             try:
                 # Read with alpha channel if present, otherwise discard it later if not needed.
                 img = cv2.imread(full_image_path, cv2.IMREAD_UNCHANGED)
                 if img is None:
-                    print(f"    Failed to load image: {full_image_path}. Skipping.")
-                    continue
+                    raise Exception(f"    Failed to load image: {full_image_path}. Skipping.")
             except Exception as e:
-                print(f"    Exception loading image {full_image_path}: {e}. Skipping.")
-                continue
+                raise Exception(f"    Exception loading image {full_image_path}: {e}. Skipping.")
             
             # If image has 4 channels (e.g., RGBA), convert to BGR for processing
             if img.ndim == 3 and img.shape[2] == 4:
@@ -823,7 +819,7 @@ def display_chip_grid(dataset_root, collection_name, filename_prefix,
         suptitle_text += f" | Stride: {stride} (Step: {effective_step})"
     plt.suptitle(suptitle_text, fontsize=16)
     plt.tight_layout(rect=[0, 0.01, 1, 0.96]) # Adjust layout
-    plt.show()
+    plt.savefig("../dataset_processed/test_out.png")
 
 if __name__ == '__main__':
     # --- Configuration ---
@@ -834,14 +830,14 @@ if __name__ == '__main__':
     # FILENAME_PREFIX = "Glassville_ortho_5cm16_chip" 
     # COLLECTION_NAME = "crozier"
     # FILENAME_PREFIX = "22_Crozier_461000_5385000_chip"
-    # COLLECTION_NAME = "dugwal"  # <<< YOUR COLLECTION NAME HERE   
-    # FILENAME_PREFIX = "22_Dugwal_500000_5383000_chip"  # <<< YOUR FILENAME PREFIX HERE
+    COLLECTION_NAME = "dugwal"  # <<< YOUR COLLECTION NAME HERE   
+    FILENAME_PREFIX = "22_Dugwal_500000_5383000_chip"  # <<< YOUR FILENAME PREFIX HERE
 
     # COLLECTION_NAME = "gooseberry"  # <<< YOUR COLLECTION NAME HERE   
     # FILENAME_PREFIX = "22_Gooseberry_598000_5420000_chip"  # <<< YOUR FILENAME PREFIX HERE
 
-    COLLECTION_NAME = "gowanmarsh"
-    FILENAME_PREFIX = "22_Gowanmarsh_484000_5390000_chip"  # <<< YOUR FILENAME PREFIX HER
+    # COLLECTION_NAME = "gowanmarsh"
+    # FILENAME_PREFIX = "22_Gowanmarsh_484000_5390000_chip"  # <<< YOUR FILENAME PREFIX HER
 
     # --- Display Mode ---
     # Set to True to automatically detect and show all available chips.
