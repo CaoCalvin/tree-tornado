@@ -823,7 +823,7 @@ def display_chip_grid(dataset_root, collection_name, filename_prefix,
         suptitle_text += f" | Stride: {stride} (Step: {effective_step})"
     plt.suptitle(suptitle_text, fontsize=16)
     plt.tight_layout(rect=[0, 0.01, 1, 0.96]) # Adjust layout
-    plt.show()
+    plt.savefig("./dataset_processed/chip_grid.png", dpi=300, bbox_inches='tight')
 
 if __name__ == '__main__':
     # --- Configuration ---
