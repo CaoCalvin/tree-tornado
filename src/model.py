@@ -185,94 +185,90 @@ def get_validation_augmentation():
 
     return transform, str(transform)
 
-def visualize(**images):
-    """Plot images in one row."""
-    n = len(images)
-    plt.figure(figsize=(16, 5))
-    for i, (name, img) in enumerate(images.items()):
-        plt.subplot(1, n, i + 1)
-        plt.xticks([])
-        plt.yticks([])
-        plt.title(" ".join(name.split("_")).title())
-        if name == "image":
-            # Check if image is in CHW format; if so, convert it to HWC for plotting
-            if isinstance(img, torch.Tensor):
-                if img.shape[0] == 3:
-                    img = img.permute(1, 2, 0).cpu().numpy()
-            else:
-                if img.shape[0] == 3:
-                    img = img.transpose(1, 2, 0)
-            # Remove ImageNet normalization by inverting it
-            mean = np.array([0.485, 0.456, 0.406])
-            std = np.array([0.229, 0.224, 0.225])
-            img = img * std + mean
-            img = np.clip(img, 0, 1)
-            plt.imshow(img)
-        else:
-            # Convert greyscale integer mask to RGB colored mask using the enum directly.
-            color_mask = np.zeros((*img.shape, 3), dtype=np.uint8)
-            for cls_member in Cls:
-                color_mask[img == cls_member.value] = cls_member.rgb_color
-            plt.imshow(color_mask)
+def visualize(image, ground_truth_mask, predicted_mask):
+    """
+    Creates a side-by-side plot of the original image with the ground truth
+    and predicted masks overlaid.
+
+    Args:
+        image (torch.Tensor): The original image tensor (normalized, in CHW format).
+        ground_truth_mask (np.ndarray): The ground truth mask.
+        predicted_mask (np.ndarray): The predicted mask.
+
+    Returns:
+        matplotlib.figure.Figure: The figure object containing the plots.
+    """
+    # Create a figure for the side-by-side comparison
+    fig, ax = plt.subplots(1, 2, figsize=(16, 8))
+    try:
+        filename = os.path.basename(image.filename)
+    except AttributeError:
+        filename = "Unknown Filename"
+    plt.suptitle(filename, fontsize=16)
+
+    # Un-normalize the image tensor for displaying
+    mean = torch.tensor([0.485, 0.456, 0.406]).view(3, 1, 1)
+    std = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
+    
+    # Ensure tensor is on CPU for numpy conversion
+    image_for_display = image.cpu() * std + mean
+    image_for_display = np.clip(image_for_display.permute(1, 2, 0).numpy(), 0, 1)
+
+    # Helper to convert a grayscale mask to a colored one
+    def to_color_mask(mask):
+        color_mask = np.zeros((*mask.shape, 3), dtype=np.uint8)
+        for cls_member in Cls:
+            color_mask[mask == cls_member.value] = cls_member.rgb_color
+        return color_mask
+
+    gt_color_mask = to_color_mask(ground_truth_mask)
+    pred_color_mask = to_color_mask(predicted_mask)
+
+    # Display Original Image + Ground Truth Mask
+    ax[0].imshow(image_for_display)
+    ax[0].imshow(gt_color_mask, alpha=0.5)  # Overlay mask with transparency
+    ax[0].set_title("Original Image + Ground Truth")
+    ax[0].axis('off')
+
+    # Display Original Image + Predicted Mask
+    ax[1].imshow(image_for_display)
+    ax[1].imshow(pred_color_mask, alpha=0.5) # Overlay mask with transparency
+    ax[1].set_title("Original Image + Prediction")
+    ax[1].axis('off')
+
+    plt.tight_layout()
+    return fig
 
 class ImageLoggingCallback(pl.Callback):
     """
-    Logs a batch of validation samples to W&B, including the input image,
-    ground truth mask, and the model's predicted mask.
-
-    This callback finds a specified number of images for each unique
-    combination of classes present in the ground truth masks of the
-    validation set.
+    Logs a batch of validation samples to W&B, including side-by-side
+    visualizations of the ground truth and predicted masks on the original image.
     """
-    # --- MODIFICATION START ---
     def __init__(self, num_samples_per_combo=1):
-        """
-        Args:
-            num_samples_per_combo (int): The number of images to log for each
-                                         unique class combination.
-        """
         super().__init__()
-        # Store the number of samples to log for each combination
         self.num_samples_per_combo = num_samples_per_combo
         self.class_labels = {cls.value: cls.name for cls in Cls}
-        
-        # Dynamically generate all possible non-empty subsets of class values
         class_values = [cls.value for cls in Cls]
         all_combinations = chain.from_iterable(combinations(class_values, r) for r in range(1, len(class_values) + 1))
         self.target_combinations = {frozenset(combo) for combo in all_combinations}
-        
-        # Use a dictionary to count how many we've logged for each combination
         self.combination_counts = {}
-    # --- MODIFICATION END ---
 
     def _is_done(self):
         """Checks if we have logged the desired number of samples for all combinations."""
         if len(self.combination_counts) < len(self.target_combinations):
             return False
-        
         return all(count >= self.num_samples_per_combo for count in self.combination_counts.values())
-    
+
     def on_validation_epoch_end(self, trainer, pl_module):
-        # Skip the callback during the sanity check
-        if trainer.sanity_checking:
+        if trainer.sanity_checking or trainer.current_epoch != 0:
             return
 
-        # Only log images at the end of the first real validation epoch
-        if trainer.current_epoch != 0:
-            return
-
-        # Correctly get the validation dataloader
-        val_dataloaders = trainer.val_dataloaders
-        if isinstance(val_dataloaders, list):
-            val_loader = val_dataloaders[0]
-        else:
-            val_loader = val_dataloaders
+        val_loader = trainer.val_dataloaders
+        if isinstance(val_loader, list):
+            val_loader = val_loader[0]
 
         device = pl_module.device
         images_to_log = []
-
-        mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(1, 3, 1, 1)
-        std = torch.tensor([0.229, 0.224, 0.225], device=device).view(1, 3, 1, 1)
 
         pl_module.eval()
         with torch.no_grad():
@@ -288,43 +284,42 @@ class ImageLoggingCallback(pl.Callback):
                 for i in range(images.shape[0]):
                     gt_mask = gt_masks[i]
                     present_classes = frozenset(torch.unique(gt_mask).cpu().numpy())
-
                     current_count = self.combination_counts.get(present_classes, 0)
+
                     if present_classes in self.target_combinations and current_count < self.num_samples_per_combo:
                         self.combination_counts[present_classes] = current_count + 1
 
-                        image_vis = (images[i].unsqueeze(0) * std + mean).clamp(0, 1)
-                        image_vis_np = (image_vis.squeeze(0).permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
-
+                        # --- MODIFICATION START ---
+                        # Get the necessary data for visualization
+                        image_tensor = images[i] # Keep as tensor for un-normalization
                         gt_mask_np = gt_mask.cpu().numpy().astype(np.uint8)
                         pred_mask_np = pred_masks[i].cpu().numpy().astype(np.uint8)
-                        
+
+                        # Generate the matplotlib figure using the new visualize function
+                        fig = visualize(
+                            image=image_tensor,
+                            ground_truth_mask=gt_mask_np,
+                            predicted_mask=pred_mask_np
+                        )
+
                         class_names = [self.class_labels[c] for c in sorted(list(present_classes))]
                         caption = f"Classes: {class_names}, Sample #{current_count + 1}"
 
-                        wandb_image = wandb.Image(
-                            image_vis_np,
-                            caption=caption,
-                            masks={
-                                "ground_truth": {"mask_data": gt_mask_np, "class_labels": self.class_labels},
-                                "prediction": {"mask_data": pred_mask_np, "class_labels": self.class_labels},
-                            },
-                        )
-                        # --- START: MODIFICATION ---
-                        # Store the caption and the image object together in a tuple
+                        # Log the figure to W&B
+                        wandb_image = wandb.Image(fig, caption=caption)
+                        
+                        # Close the figure to free up memory
+                        plt.close(fig)
+                        
                         images_to_log.append((caption, wandb_image))
-                        # --- END: MODIFICATION ---
+                        # --- MODIFICATION END ---
 
         if images_to_log:
-            # --- START: MODIFICATION ---
-            # Sort the list of tuples based on the caption (the first element)
+            # Sort images by caption to maintain a consistent order in W&B
             images_to_log.sort(key=lambda item: item[0])
-            
-            # Extract just the image objects from the sorted list for logging
             final_images = [item[1] for item in images_to_log]
-            
             trainer.logger.experiment.log({"Validation Samples": final_images})
-            # --- END: MODIFICATION ---
+
 class CamVidModel(pl.LightningModule):
     def __init__(self, arch, encoder_name, in_channels, out_classes, **kwargs):
         super().__init__()
@@ -530,12 +525,12 @@ if __name__ == '__main__':
 
     SEED = 42
 
-    idx = random.randint(0, len(dataset_train) - 1)
-    image, mask = dataset_train[idx] 
-    print(f"Showing image {idx} of {len(dataset_train)}")
-    print(f"Mask shape: {mask.shape}")
-    print(f"Image shape: {image.shape}")
-    visualize(image=image, mask=mask)
+    # idx = random.randint(0, len(dataset_train) - 1)
+    # image, mask = dataset_train[idx] 
+    # print(f"Showing image {idx} of {len(dataset_train)}")
+    # print(f"Mask shape: {mask.shape}")
+    # print(f"Image shape: {image.shape}")
+    # visualize(image=image, mask=mask)
 
 
     torch.set_float32_matmul_precision('medium') # TODO see if high is better or low doesn't make a difference
