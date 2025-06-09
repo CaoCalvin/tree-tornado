@@ -110,7 +110,8 @@ class Dataset(BaseDataset):
         if self.transform:
             augmented = self.transform(image=image, mask=mask)
             image, mask = augmented["image"], augmented["mask"]
-        return image, mask
+        # Add the image path to the return statement
+        return image, mask, img_path
    
 def get_training_augmentation(input_size=512):
     """
@@ -274,13 +275,15 @@ class ImageLoggingCallback(pl.Callback):
         mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(1, 3, 1, 1)
         std = torch.tensor([0.229, 0.224, 0.225], device=device).view(1, 3, 1, 1)
 
+
         pl_module.eval()
         with torch.no_grad():
             for batch in val_loader:
                 if self._is_done():
                     break
 
-                images, gt_masks = batch
+                # Unpack the image paths from the batch
+                images, gt_masks, img_paths = batch
                 images, gt_masks = images.to(device), gt_masks.to(device)
                 logits = pl_module(images)
                 pred_masks = torch.argmax(logits, dim=1)
@@ -288,17 +291,19 @@ class ImageLoggingCallback(pl.Callback):
                 for i in range(images.shape[0]):
                     gt_mask = gt_masks[i]
                     present_classes = frozenset(torch.unique(gt_mask).cpu().numpy())
-
                     current_count = self.combination_counts.get(present_classes, 0)
+
                     if present_classes in self.target_combinations and current_count < self.num_samples_per_combo:
                         self.combination_counts[present_classes] = current_count + 1
+
 
                         image_vis = (images[i].unsqueeze(0) * std + mean).clamp(0, 1)
                         image_vis_np = (image_vis.squeeze(0).permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
 
                         gt_mask_np = gt_mask.cpu().numpy().astype(np.uint8)
                         pred_mask_np = pred_masks[i].cpu().numpy().astype(np.uint8)
-                        
+
+                        filename = os.path.basename(img_paths[i])
                         class_names = [self.class_labels[c] for c in sorted(list(present_classes))]
                         caption = f"Classes: {class_names}, Sample #{current_count + 1}"
 
@@ -310,13 +315,11 @@ class ImageLoggingCallback(pl.Callback):
                                 "prediction": {"mask_data": pred_mask_np, "class_labels": self.class_labels},
                             },
                         )
-                        # --- START: MODIFICATION ---
-                        # Store the caption and the image object together in a tuple
-                        images_to_log.append((caption, wandb_image))
-                        # --- END: MODIFICATION ---
+                        
+                        # Log the image with its filename as the key
+                        trainer.logger.experiment.log({f"Validation Samples/{filename}": wandb_image})
 
         if images_to_log:
-            # --- START: MODIFICATION ---
             # Sort the list of tuples based on the caption (the first element)
             images_to_log.sort(key=lambda item: item[0])
             
@@ -324,7 +327,7 @@ class ImageLoggingCallback(pl.Callback):
             final_images = [item[1] for item in images_to_log]
             
             trainer.logger.experiment.log({"Validation Samples": final_images})
-            # --- END: MODIFICATION ---
+            
 class CamVidModel(pl.LightningModule):
     def __init__(self, arch, encoder_name, in_channels, out_classes, **kwargs):
         super().__init__()
@@ -354,7 +357,8 @@ class CamVidModel(pl.LightningModule):
         return mask
 
     def shared_step(self, batch, stage, batch_idx):
-        image, mask = batch
+        # Unpack the batch, ignoring the new image path element
+        image, mask, _ = batch
         image = image.to(device)
         mask = mask.to(device)
         assert image.ndim == 4, "Expected image to have 4 dimensions, got shape " + str(image.shape)
