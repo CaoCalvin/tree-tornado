@@ -37,6 +37,7 @@ import logging
 from itertools import chain, combinations
 import wandb
 import os
+
 class Cls(Enum):
     UPRIGHT = (0, "#b7f2a6")  # light green
     FALLEN = (1, "#c71933")   # red
