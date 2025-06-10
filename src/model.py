@@ -49,22 +49,29 @@ class Cls(Enum):
         obj.rgb_color = tuple(int(hex_color[i:i+2], 16) for i in (1, 3, 5))  # Convert hex to RGB
         return obj
     
-def resplit(dataset_path, train_frac=0.7, val_frac=0.2, test_frac=0.1, seed=42):
-    assert train_frac + val_frac + test_frac == 1.0, "Fractions must sum to 1."
+import logging
 
-    scenes = sorted(os.listdir(os.path.join(dataset_path, 'images')))
+def resplit(dataset_path, train_frac=0.7, val_frac=0.15, test_frac=0.15, seed=42):
+    """Splits scene folders into train, validation, and test sets."""
+    assert math.isclose(train_frac + val_frac + test_frac, 1.0), "Fractions must sum to 1."
+    
+    images_path = os.path.join(dataset_path, 'images')
+    assert os.path.exists(images_path), f"Dataset images path does not exist: {images_path}"
+    
+    scenes = sorted(os.listdir(images_path))
+    assert scenes, f"No scenes found in {images_path}. The directory is empty."
+    
     random.seed(seed)
     random.shuffle(scenes)
-    
+
     n = len(scenes)
     n_train = int(n * train_frac)
-    # Use remaining scenes for both validation and test equally
-    remaining = n - n_train
-    half = remaining // 2  # ensure both splits have the same number of scenes
-    
+    n_val = int(n * val_frac)
+
     train_scenes = scenes[:n_train]
-    val_scenes = scenes[n_train:n_train+half]
-    test_scenes = scenes[n_train+half:n_train+2*half]
+    val_scenes = scenes[n_train : n_train + n_val]
+    test_scenes = scenes[n_train + n_val:] # Assign the rest to test set
+
 
     os.makedirs(os.path.join(dataset_path, 'splits'), exist_ok=True)
     for name, split in zip(['train', 'val', 'test'], [train_scenes, val_scenes, test_scenes]):
@@ -73,7 +80,6 @@ def resplit(dataset_path, train_frac=0.7, val_frac=0.2, test_frac=0.1, seed=42):
                 f.write(f"{scene}\n")
 
 class Dataset(BaseDataset):
-
     def __init__(self, image_root, mask_root, split_file, transform=None):
         self.background_class = Cls.UPRIGHT.value
         assert os.path.exists(image_root), f"Image root {image_root} does not exist."
@@ -86,19 +92,30 @@ class Dataset(BaseDataset):
         
         with open(split_file, 'r') as f:
             self.scenes = [line.strip() for line in f if line.strip()]
-        
+
+        assert self.scenes, f"Split file is empty: {split_file}"
+
         self.samples = []
         for scene in self.scenes:
             image_dir = os.path.join(self.image_root, scene)
             mask_dir = os.path.join(self.mask_root, scene)
             
+            assert os.path.isdir(image_dir), f"Scene directory not found in images: {image_dir}"
+            assert os.path.isdir(mask_dir), f"Scene directory not found in masks: {mask_dir}"
+
             for fname in sorted(os.listdir(image_dir)):
                 if not fname.endswith(('.png', '.jpg', '.jpeg', '.tiff', '.tif')):
                     continue
                 img_path = os.path.join(image_dir, fname)
                 name, ext = os.path.splitext(fname)
-                mask_path = os.path.join(mask_dir, f"{name}_mask{ext}")  
+                mask_path = os.path.join(mask_dir, f"{name}_mask{ext}")
+
+                # CRITICAL: Ensure every image has a corresponding mask before adding to samples.
+                assert os.path.exists(mask_path), f"Mask not found for image: {img_path}\nExpected at: {mask_path}"
+                
                 self.samples.append((img_path, mask_path))
+
+        assert len(self.samples) > 0, f"No samples were found for the split defined by {split_file}. Check file paths and content."
 
     def __len__(self):
         return len(self.samples)
@@ -107,10 +124,22 @@ class Dataset(BaseDataset):
         img_path, mask_path = self.samples[idx]
         image = np.array(Image.open(img_path).convert('RGB'))
         mask = np.array(Image.open(mask_path))
+
+        # Check dimensions before augmentation
+        assert image.ndim == 3, f"Image should have 3 dimensions (H, W, C), but got {image.ndim} for {img_path}"
+        assert mask.ndim == 2, f"Mask should have 2 dimensions (H, W), but got {mask.ndim} for {mask_path}"
+        assert image.shape[:2] == mask.shape, f"Image and mask dimensions do not match: {image.shape[:2]} vs {mask.shape} for {img_path}"
+
         if self.transform:
             augmented = self.transform(image=image, mask=mask)
             image, mask = augmented["image"], augmented["mask"]
-        # Add the image path to the return statement
+        
+        # Check data types and shapes after augmentation
+        assert isinstance(image, torch.Tensor), f"Image should be a torch.Tensor but got {type(image)}"
+        assert isinstance(mask, torch.Tensor), f"Mask should be a torch.Tensor but got {type(mask)}"
+        assert image.dtype == torch.float32, f"Image tensor should have dtype float32, but has {image.dtype}"
+        assert mask.dtype == torch.int64 or mask.dtype == torch.long, f"Mask tensor should have dtype int64/long, but has {mask.dtype}"
+        
         return image, mask, img_path
    
 def get_training_augmentation(input_size=512):
@@ -169,11 +198,6 @@ def get_training_augmentation(input_size=512):
         A.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225)),
         ToTensorV2(),
     ])
-    try:
-        # Log the string representation of the new, improved pipeline.
-        wandb_logger.log({"training_transforms": str(transform)})
-    except Exception as e:
-        print("W&B logging not available (or not initialized):", e)
     return transform, str(transform)
 
 
@@ -258,10 +282,6 @@ class ImageLoggingCallback(pl.Callback):
         if trainer.sanity_checking:
             return
 
-        # Only log images at the end of the first real validation epoch
-        if trainer.current_epoch != 0:
-            return
-
         # Correctly get the validation dataloader
         val_dataloaders = trainer.val_dataloaders
         if isinstance(val_dataloaders, list):
@@ -270,7 +290,6 @@ class ImageLoggingCallback(pl.Callback):
             val_loader = val_dataloaders
 
         device = pl_module.device
-        images_to_log = []
 
         mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(1, 3, 1, 1)
         std = torch.tensor([0.229, 0.224, 0.225], device=device).view(1, 3, 1, 1)
@@ -318,18 +337,9 @@ class ImageLoggingCallback(pl.Callback):
                         
                         # Log the image with its filename as the key
                         trainer.logger.experiment.log({f"Validation Samples/{filename}": wandb_image})
-
-        if images_to_log:
-            # Sort the list of tuples based on the caption (the first element)
-            images_to_log.sort(key=lambda item: item[0])
-            
-            # Extract just the image objects from the sorted list for logging
-            final_images = [item[1] for item in images_to_log]
-            
-            trainer.logger.experiment.log({"Validation Samples": final_images})
             
 class CamVidModel(pl.LightningModule):
-    def __init__(self, arch, encoder_name, in_channels, out_classes, **kwargs):
+    def __init__(self, arch, encoder_name, in_channels, out_classes, lr, optimizer_type, scheduler_type, t_max, eta_min, freeze_encoder, **kwargs):        
         super().__init__()
         self.model = smp.create_model(
             arch,
@@ -338,6 +348,11 @@ class CamVidModel(pl.LightningModule):
             classes=out_classes,
             **kwargs,
         )
+        
+        if freeze_encoder:
+            for param in self.model.encoder.parameters():
+                param.requires_grad = False
+
         params = smp.encoders.get_preprocessing_params(encoder_name)
         self.number_of_classes = out_classes
         # A list of class names derived from the Cls enum for logging purposes.
@@ -348,19 +363,24 @@ class CamVidModel(pl.LightningModule):
         self.training_step_outputs = []
         self.validation_step_outputs = []
         self.test_step_outputs = []
+        self.lr = lr
+        self.optimizer_type = optimizer_type
+        self.scheduler_type = scheduler_type
+        self.t_max = t_max
+        self.eta_min = eta_min    
 
     def forward(self, image):
-        # In a real application, you might want to un-normalize the image
-        # before passing it to the model if your augmentations include normalization.
-        # image = (image - self.mean) / self.std
         mask = self.model(image)
         return mask
 
     def shared_step(self, batch, stage, batch_idx):
         # Unpack the batch, ignoring the new image path element
         image, mask, _ = batch
-        image = image.to(device)
-        mask = mask.to(device)
+        # Check that mask values are within the expected range of class indices
+        unique_mask_vals = torch.unique(mask)
+        assert unique_mask_vals.max() < self.number_of_classes, f"Mask contains class index {unique_mask_vals.max()} which is out of bounds for {self.number_of_classes} classes."
+        assert unique_mask_vals.min() >= 0, f"Mask contains negative class index {unique_mask_vals.min()}."
+
         assert image.ndim == 4, "Expected image to have 4 dimensions, got shape " + str(image.shape)
         mask = mask.long()
         assert mask.ndim == 3, "Expected mask to have 3 dimensions, got shape " + str(mask.shape)
@@ -447,8 +467,8 @@ class CamVidModel(pl.LightningModule):
         self.test_step_outputs.clear()
 
     def configure_optimizers(self):
-        optimizer = OPTIMIZER_TYPE(self.parameters(), lr=LEARNING_RATE)
-        scheduler = SCHEDULER_TYPE(optimizer, T_max=T_MAX, eta_min=ETA_MIN)
+        optimizer = self.optimizer_type(self.parameters(), lr=self.lr)
+        scheduler = self.scheduler_type(optimizer, T_max=self.t_max, eta_min=self.eta_min)
         return {
             "optimizer": optimizer,
             "lr_scheduler": {
@@ -464,7 +484,6 @@ class CamVidModel(pl.LightningModule):
 
 if __name__ == '__main__':
     # torch.multiprocessing.set_start_method('spawn', force=True)
-
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     if not torch.cuda.is_available():
         raise RuntimeError("CUDA is not available. Please ensure you have a compatible GPU and CUDA installed.")
@@ -533,8 +552,21 @@ if __name__ == '__main__':
 
     SEED = 42
 
+    # Verify that all datasets have been loaded successfully and are not empty.
+    print(f"Successfully loaded {len(dataset_train)} training samples.")
+    print(f"Successfully loaded {len(dataset_val)} validation samples.")
+    print(f"Successfully loaded {len(dataset_test)} test samples.")
+    assert len(dataset_train) > 0, "Training dataset is empty. Check your train.txt split file and paths."
+    assert len(dataset_val) > 0, "Validation dataset is empty. Check your val.txt split file and paths."
+    # Test dataset can sometimes be empty if not used, but it's good practice to check if you expect it.
+    assert len(dataset_test) > 0, "Test dataset is empty. Check your test.txt split file and paths."
+    
+    # Assert that key hyperparameters are valid
+    assert BATCH_SIZE > 0, "Batch size must be a positive integer."
+    assert EPOCHS > 0, "Number of epochs must be a positive integer."
+
     idx = random.randint(0, len(dataset_train) - 1)
-    image, mask = dataset_train[idx] 
+    image, mask, _ = dataset_train[idx] 
     print(f"Showing image {idx} of {len(dataset_train)}")
     print(f"Mask shape: {mask.shape}")
     print(f"Image shape: {image.shape}")
@@ -550,10 +582,14 @@ if __name__ == '__main__':
         ENCODER_NAME,
         in_channels=3,
         out_classes=OUT_CLASSES,
-        encoder_weights=ENCODER_WEIGHTS
-    ).to(device)
-    for param in model.model.encoder.parameters():
-        param.requires_grad = False
+        lr=LEARNING_RATE,
+        optimizer_type=OPTIMIZER_TYPE,
+        scheduler_type=SCHEDULER_TYPE,
+        t_max=T_MAX,
+        eta_min=ETA_MIN,
+        encoder_weights=ENCODER_WEIGHTS,
+        freeze_encoder=True,  # Set to True if you want to freeze the encoder
+        ).to(device)
 
     wandb_logger.experiment.config.update({
         "epochs": EPOCHS,
@@ -574,14 +610,14 @@ if __name__ == '__main__':
     })
 
     # TODO: Tune number of workers based on system
-    train_loader = DataLoader(dataset_train, batch_size=BATCH_SIZE, shuffle=True, num_workers=16, persistent_workers=True, pin_memory=True)
-    val_loader = DataLoader(dataset_val, batch_size=BATCH_SIZE, shuffle=False, num_workers=16, persistent_workers=True, pin_memory=True)
+    train_loader = DataLoader(dataset_train, batch_size=BATCH_SIZE, shuffle=True, num_workers=os.cpu_count() // 2, persistent_workers=True, pin_memory=True)
+    val_loader = DataLoader(dataset_val, batch_size=BATCH_SIZE, shuffle=False, num_workers=os.cpu_count() // 2, persistent_workers=True, pin_memory=True)
 
     image_logging_callback = ImageLoggingCallback(num_samples_per_combo=3)
 
     trainer = pl.Trainer(
         max_epochs=EPOCHS,
-        log_every_n_steps=1,
+        log_every_n_steps=25,
         fast_dev_run=False,
         callbacks=[RichProgressBar(), image_logging_callback], 
         logger=wandb_logger
