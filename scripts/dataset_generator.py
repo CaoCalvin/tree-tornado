@@ -37,6 +37,7 @@ LOCAL_IMAGE_ROOT_DIR = r"..\dataset\images" #Needs to be changed by user
 # Default downscaling interpolation method
 DOWNSCALE_INTERPOLATION = cv2.INTER_AREA
 
+
 # Grayscale mapping for masks
 LABEL_TO_VALUE = {
     "upright": 0,
@@ -581,7 +582,10 @@ def process_images(cvat_xml_path, server_paths_csv_path):
 # %%
 
 if __name__ == "__main__":
+    os.environ["OPENCV_IO_MAX_IMAGE_PIXELS"] = str(pow(2,40))
+    
     # --- User Input ---
+
     # Ensure these paths are correct
     cvat_xml_file = r"..\resources\annotations.xml"  # Path to your CVAT XML file
     server_paths_file = r"..\resources\serverpaths.csv" # Path to your CSV file with server paths
