@@ -11,12 +11,12 @@ from PIL import Image
 import numpy as np
 from enum import Enum
 import cv2 
-import pytorch_lightning as pl
+import lightning as pl
 from pytorch_lightning.loggers import WandbLogger
 import segmentation_models_pytorch as smp
 from torch.optim import lr_scheduler
 import math
-from pytorch_lightning.callbacks import RichProgressBar
+from lightning.callbacks import RichProgressBar
 import logging
 from itertools import chain, combinations
 import wandb
