@@ -159,8 +159,7 @@ def get_training_augmentation(input_size=512):
 
         # Crop a random part and resize it back.
         A.RandomResizedCrop(
-            height=input_size,
-            width=input_size,
+            size=(input_size, input_size),
             scale=(0.9, 1.0),
             p=.5 
         ),
