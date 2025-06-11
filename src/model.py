@@ -11,12 +11,12 @@ from PIL import Image
 import numpy as np
 from enum import Enum
 import cv2 
-import pytorch_lightning as pl
-from pytorch_lightning.loggers import WandbLogger
+import lightning as pl
+from lightning.pytorch.loggers import WandbLogger
 import segmentation_models_pytorch as smp
 from torch.optim import lr_scheduler
 import math
-from pytorch_lightning.callbacks import RichProgressBar
+from lightning.pytorch.callbacks import RichProgressBar
 import logging
 from itertools import chain, combinations
 import wandb
@@ -124,7 +124,7 @@ class Dataset(BaseDataset):
         assert isinstance(image, torch.Tensor), f"Image should be a torch.Tensor but got {type(image)}"
         assert isinstance(mask, torch.Tensor), f"Mask should be a torch.Tensor but got {type(mask)}"
         assert image.dtype == torch.float32, f"Image tensor should have dtype float32, but has {image.dtype}"
-        assert mask.dtype == torch.int64 or mask.dtype == torch.long, f"Mask tensor should have dtype int64/long, but has {mask.dtype}"
+        assert mask.dtype == torch.int64 or mask.dtype == torch.long or mask.dtype == torch.uint8, f"Mask tensor should have dtype int64/long, but has {mask.dtype}"
         
         return image, mask, img_path
    
@@ -516,7 +516,7 @@ def objective(trial: optuna.Trial):
         warmup_steps=warmup_steps,
         t_max=T_MAX,
         eta_min=1e-6, # A small minimum learning rate
-        freeze_encoder=False # Usually better to finetune the encoder
+        freeze_encoder=True # Usually better to finetune the encoder
     )
 
     # --- 4. Configure Callbacks and Logger ---
@@ -543,6 +543,8 @@ def objective(trial: optuna.Trial):
 
 
 if __name__ == '__main__':
+    # print(pl.__version__)
+
     torch.set_float32_matmul_precision('medium')
     pl.seed_everything(42)
     
