@@ -1,0 +1,47 @@
+Traceback (most recent call last):
+  File "Z:\Miniconda\envs\torch-env\lib\site-packages\optuna\study\_optimize.py", line 197, in _run_trial
+    value_or_values = func(trial)
+  File "Z:\tree-tornado\src\model.py", line 527, in objective
+    trainer = pl.Trainer(
+  File "Z:\Miniconda\envs\torch-env\lib\site-packages\pytorch_lightning\utilities\argparse.py", line 70, in insert_env_defaults
+    return fn(self, **kwargs)
+  File "Z:\Miniconda\envs\torch-env\lib\site-packages\pytorch_lightning\trainer\trainer.py", line 434, in __init__
+    self._callback_connector.on_trainer_init(
+  File "Z:\Miniconda\envs\torch-env\lib\site-packages\pytorch_lightning\trainer\connectors\callback_connector.py", line 82, in on_trainer_init
+    _validate_callbacks_list(self.trainer.callbacks)
+  File "Z:\Miniconda\envs\torch-env\lib\site-packages\pytorch_lightning\trainer\connectors\callback_connector.py", line 247, in _validate_callbacks_list
+    stateful_callbacks = [cb for cb in callbacks if is_overridden("state_dict", instance=cb)]
+  File "Z:\Miniconda\envs\torch-env\lib\site-packages\pytorch_lightning\trainer\connectors\callback_connector.py", line 247, in <listcomp>
+    stateful_callbacks = [cb for cb in callbacks if is_overridden("state_dict", instance=cb)]
+  File "Z:\Miniconda\envs\torch-env\lib\site-packages\pytorch_lightning\utilities\model_helpers.py", line 42, in is_overridden
+    raise ValueError("Expected a parent")
+ValueError: Expected a parent
+[W 2025-06-11 11:25:07,078] Trial 0 failed with value None.
+Traceback (most recent call last):
+  File "Z:\tree-tornado\src\model.py", line 563, in <module>
+    study.optimize(objective, n_trials=100, timeout=3600*6) # Run for 100 trials or 6 hours
+  File "Z:\Miniconda\envs\torch-env\lib\site-packages\optuna\study\study.py", line 475, in optimize
+    _optimize(
+  File "Z:\Miniconda\envs\torch-env\lib\site-packages\optuna\study\_optimize.py", line 63, in _optimize
+    _optimize_sequential(
+  File "Z:\Miniconda\envs\torch-env\lib\site-packages\optuna\study\_optimize.py", line 160, in _optimize_sequential
+    frozen_trial = _run_trial(study, func, catch)
+  File "Z:\Miniconda\envs\torch-env\lib\site-packages\optuna\study\_optimize.py", line 248, in _run_trial
+    raise func_err
+  File "Z:\Miniconda\envs\torch-env\lib\site-packages\optuna\study\_optimize.py", line 197, in _run_trial
+    value_or_values = func(trial)
+  File "Z:\tree-tornado\src\model.py", line 527, in objective
+    trainer = pl.Trainer(
+  File "Z:\Miniconda\envs\torch-env\lib\site-packages\pytorch_lightning\utilities\argparse.py", line 70, in insert_env_defaults
+    return fn(self, **kwargs)
+  File "Z:\Miniconda\envs\torch-env\lib\site-packages\pytorch_lightning\trainer\trainer.py", line 434, in __init__
+    self._callback_connector.on_trainer_init(
+  File "Z:\Miniconda\envs\torch-env\lib\site-packages\pytorch_lightning\trainer\connectors\callback_connector.py", line 82, in on_trainer_init
+    _validate_callbacks_list(self.trainer.callbacks)
+  File "Z:\Miniconda\envs\torch-env\lib\site-packages\pytorch_lightning\trainer\connectors\callback_connector.py", line 247, in _validate_callbacks_list
+    stateful_callbacks = [cb for cb in callbacks if is_overridden("state_dict", instance=cb)]
+  File "Z:\Miniconda\envs\torch-env\lib\site-packages\pytorch_lightning\trainer\connectors\callback_connector.py", line 247, in <listcomp>
+    stateful_callbacks = [cb for cb in callbacks if is_overridden("state_dict", instance=cb)]
+  File "Z:\Miniconda\envs\torch-env\lib\site-packages\pytorch_lightning\utilities\model_helpers.py", line 42, in is_overridden
+    raise ValueError("Expected a parent")
+ValueError: Expected a parent
