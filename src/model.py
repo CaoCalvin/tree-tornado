@@ -553,8 +553,7 @@ if __name__ == '__main__':
     study = optuna.create_study(
         study_name="segformer-bohb-tuning",
         direction="maximize", # We want to maximize the validation IoU
-        sampler=optuna.samplers.TPESampler(),
-        multivariate=True, # Enable multivariate optimization
+        sampler=optuna.samplers.TPESampler(multivariate=True),
         pruner=optuna.pruners.HyperbandPruner(
             min_resource=1, max_resource=35, reduction_factor=3
         ),
