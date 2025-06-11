@@ -408,7 +408,11 @@ class CamVidModel(pl.LightningModule):
         self.log_dict(metrics, prog_bar=True)
 
     def training_step(self, batch, batch_idx):
-        return self.shared_step(batch, "train", batch_idx)
+        metrics = self.shared_step(batch, "train", batch_idx)
+        
+        self.training_step_outputs.append(metrics)
+        
+        return metrics["loss"]
 
     def on_train_epoch_end(self):
         self.shared_epoch_end(self.training_step_outputs, "train")
