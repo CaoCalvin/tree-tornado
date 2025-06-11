@@ -390,6 +390,65 @@ class CamVidModel(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         return self._common_step(batch, batch_idx, "valid")
+
+    def configure_optimizers(self):
+        # We pass the weight_decay to the optimizer
+
+        optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.lr, weight_decay=self.hparams.weight_decay)
+
+
+
+        if self.hparams.scheduler_type == 'CosineAnnealingLR':
+
+            scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.hparams.t_max, eta_min=self.hparams.eta_min)
+
+        elif self.hparams.scheduler_type == 'OneCycleLR':
+
+            scheduler = lr_scheduler.OneCycleLR(optimizer, max_lr=self.hparams.lr, total_steps=self.hparams.t_max)
+
+        else:
+
+            raise ValueError("Unsupported scheduler type")
+
+
+
+        # Optional: Add a learning rate warmup scheduler
+
+        if self.hparams.warmup_steps > 0:
+
+            warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
+
+                optimizer, start_factor=1e-6, end_factor=1.0, total_iters=self.hparams.warmup_steps
+
+            )
+
+            # Chain the warmup scheduler with the main scheduler
+
+            lr_scheduler_config = {
+
+                "scheduler": torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[warmup_scheduler, scheduler], milestones=[self.hparams.warmup_steps]),
+
+                "interval": "step",
+
+                "frequency": 1,
+
+            }
+
+        else:
+
+            lr_scheduler_config = {
+
+                "scheduler": scheduler,
+
+                "interval": "step",
+
+                "frequency": 1,
+
+            }
+
+
+
+        return {"optimizer": optimizer, "lr_scheduler": lr_scheduler_config}
  
 def objective(trial: optuna.Trial):
     # -- 1. Define the hyperparameter search space ---
