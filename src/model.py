@@ -345,7 +345,7 @@ class CamVidModel(pl.LightningModule):
         )
 
         # Jaccard Index is the official name for IoU (Intersection over Union)
-        self.iou = MulticlassJaccardIndex(num_classes=out_classes)
+        self.iou = MulticlassJaccardIndex(num_classes=out_classes, average='none')
 
         if freeze_encoder:
             for param in self.model.encoder.parameters():
@@ -379,9 +379,18 @@ class CamVidModel(pl.LightningModule):
         
         pred_mask = torch.argmax(logits, dim=1)
         self.iou.update(pred_mask, mask)
-        
-        # Also pass it here for the IoU metric
-        self.log(f"{stage}_dataset_iou", self.iou, on_step=False, on_epoch=True, prog_bar=True, batch_size=batch_size)
+ 
+        per_class_iou = self.iou.compute()  # returns tensor with per-class IoU
+
+        # Log overall IoU as the mean of per-class metrics
+        overall_iou = per_class_iou.mean()
+        self.log(f"{stage}_iou_overall", overall_iou,
+                on_step=False, on_epoch=True, prog_bar=True, batch_size=batch_size)
+
+        # Log per-class IoU
+        self.log_dict({f"{stage}_iou_class_{self.class_names[i]}": per_class_iou[i]
+                    for i in range(len(per_class_iou))},
+                    on_step=False, on_epoch=True, prog_bar=True, batch_size=batch_size)
         
         return loss
 
@@ -515,12 +524,13 @@ def objective(trial: optuna.Trial):
     # --- 4. Configure Callbacks and Logger ---
     # The Pruning Callback will monitor the validation dataset IoU and stop unpromising trials.
     pruning_callback = PyTorchLightningPruningCallback(trial, monitor="valid_dataset_iou")
+    image_logging_callback = ImageLoggingCallback(num_samples_per_combo=1)  # Instantiate the callback
     wandb_logger = WandbLogger(project="tree-tornado", group="BOHB-SegFormer", job_type='train')
     
     trainer = pl.Trainer(
         max_epochs=EPOCHS,
         logger=wandb_logger,
-        callbacks=[RichProgressBar(), pruning_callback],
+        callbacks=[RichProgressBar(), pruning_callback, image_logging_callback],  # Added callback here
         accelerator="gpu",
         devices=1,
         log_every_n_steps=25,
