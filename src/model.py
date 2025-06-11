@@ -1,19 +1,3 @@
-# ---
-# jupyter:
-#   jupytext:
-#     formats: ipynb,py:percent
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.17.2
-#   kernelspec:
-#     display_name: torch-env
-#     language: python
-#     name: python3
-# ---
-
-# %%
 import os
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader, Dataset as BaseDataset
@@ -37,6 +21,8 @@ import logging
 from itertools import chain, combinations
 import wandb
 import os
+import optuna
+from optuna.integration import PyTorchLightningPruningCallback
 
 class Cls(Enum):
     UPRIGHT = (0, "#b7f2a6")  # light green
@@ -52,7 +38,7 @@ class Cls(Enum):
     
 import logging
 
-def resplit(dataset_path, train_frac=0.7, val_frac=0.15, test_frac=0.15, seed=42):
+def resplit(dataset_path, train_frac=0.7, val_frac=0.15, test_frac=0.15):
     """Splits scene folders into train, validation, and test sets."""
     assert math.isclose(train_frac + val_frac + test_frac, 1.0), "Fractions must sum to 1."
     
@@ -62,7 +48,6 @@ def resplit(dataset_path, train_frac=0.7, val_frac=0.15, test_frac=0.15, seed=42
     scenes = sorted(os.listdir(images_path))
     assert scenes, f"No scenes found in {images_path}. The directory is empty."
     
-    random.seed(seed)
     random.shuffle(scenes)
 
     n = len(scenes)
@@ -338,25 +323,33 @@ class ImageLoggingCallback(pl.Callback):
                         
                         # Log the image with its filename as the key
                         trainer.logger.experiment.log({f"Validation Samples/{filename}": wandb_image})
-            
+    
 class CamVidModel(pl.LightningModule):
-    def __init__(self, arch, encoder_name, in_channels, out_classes, lr, optimizer_type, scheduler_type, t_max, eta_min, freeze_encoder, **kwargs):        
+    def __init__(self, arch, encoder_name, in_channels, out_classes, lr, optimizer_type, scheduler_type, weight_decay, drop_path_rate, warmup_steps, t_max, eta_min, freeze_encoder, **kwargs):
         super().__init__()
+        self.save_hyperparameters() # This is a handy PyTorch Lightning feature to save all constructor arguments
+
+        # The encoder_config is used to set the drop_path_rate for SegFormer
+        encoder_config = {
+            "drop_path_rate": self.hparams.drop_path_rate,
+        }
+
         self.model = smp.create_model(
             arch,
             encoder_name=encoder_name,
             in_channels=in_channels,
             classes=out_classes,
+            encoder_weights="imagenet",
+            encoder_config=encoder_config,
             **kwargs,
         )
-        
+
         if freeze_encoder:
             for param in self.model.encoder.parameters():
                 param.requires_grad = False
 
         params = smp.encoders.get_preprocessing_params(encoder_name)
         self.number_of_classes = out_classes
-        # A list of class names derived from the Cls enum for logging purposes.
         self.class_names = [c.name for c in Cls]
         self.register_buffer("std", torch.tensor(params["std"]).view(1, 3, 1, 1))
         self.register_buffer("mean", torch.tensor(params["mean"]).view(1, 3, 1, 1))
@@ -364,153 +357,131 @@ class CamVidModel(pl.LightningModule):
         self.training_step_outputs = []
         self.validation_step_outputs = []
         self.test_step_outputs = []
-        self.lr = lr
-        self.optimizer_type = optimizer_type
-        self.scheduler_type = scheduler_type
-        self.t_max = t_max
-        self.eta_min = eta_min    
 
     def forward(self, image):
-        mask = self.model(image)
-        return mask
+        return self.model(image)
 
     def shared_step(self, batch, stage, batch_idx):
-        # Unpack the batch, ignoring the new image path element
         image, mask, _ = batch
-        # Check that mask values are within the expected range of class indices
+        image = image.to(self.device)
+        mask = mask.to(self.device).long()
+
         unique_mask_vals = torch.unique(mask)
         assert unique_mask_vals.max() < self.number_of_classes, f"Mask contains class index {unique_mask_vals.max()} which is out of bounds for {self.number_of_classes} classes."
         assert unique_mask_vals.min() >= 0, f"Mask contains negative class index {unique_mask_vals.min()}."
 
         assert image.ndim == 4, "Expected image to have 4 dimensions, got shape " + str(image.shape)
-        mask = mask.long()
         assert mask.ndim == 3, "Expected mask to have 3 dimensions, got shape " + str(mask.shape)
+
+        
         logits_mask = self.forward(image)
         assert logits_mask.shape[1] == self.number_of_classes, f"Expected logits channel {self.number_of_classes}, got {logits_mask.shape[1]}"
         logits_mask = logits_mask.contiguous()
+
         loss = self.loss_fn(logits_mask, mask)
+        
         prob_mask = logits_mask.softmax(dim=1)
         pred_mask = prob_mask.argmax(dim=1)
+        
         tp, fp, fn, tn = smp.metrics.get_stats(
             pred_mask, mask, mode="multiclass", num_classes=self.number_of_classes
         )
 
         return {
-            "loss": loss,
-            "tp": tp,
-            "fp": fp,
-            "fn": fn,
-            "tn": tn,
+            "loss": loss, "tp": tp, "fp": fp, "fn": fn, "tn": tn,
         }
+
     def shared_epoch_end(self, outputs, stage):
-        # Aggregate stats from all batches
         tp = torch.cat([x["tp"] for x in outputs])
         fp = torch.cat([x["fp"] for x in outputs])
         fn = torch.cat([x["fn"] for x in outputs])
         tn = torch.cat([x["tn"] for x in outputs])
-        # print(f"[DEBUG] {stage} epoch end: Aggregated tp shape: {tp.shape}, fp shape: {fp.shape}, fn shape: {fn.shape}, tn shape: {tn.shape}")
 
-        # Calculate overall metrics
+        # Per-image IoU for a general sense of performance
+        per_image_iou = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro-imagewise")
+        # Dataset-level IoU (micro-average) is a robust metric for overall performance
+        dataset_iou_micro = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
+
         metrics = {
-            f"{stage}_per_image_iou": smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro-imagewise"),
-            f"{stage}_dataset_iou_micro": smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro"),
-            f"{stage}_dataset_iou_macro": smp.metrics.iou_score(tp, fp, fn, tn, reduction="macro"),
+            f"{stage}_per_image_iou": per_image_iou,
+            f"{stage}_dataset_iou": dataset_iou_micro,
         }
-        # print(f"[DEBUG] {stage} epoch end: Overall metrics calculated: {metrics}")
-
-        # --- START OF FIX ---
-        # To get the IoU per class for the whole dataset, we must sum the stats along the sample dimension (dim=0) first.
-        tp_agg = torch.sum(tp, dim=0)
-        fp_agg = torch.sum(fp, dim=0)
-        fn_agg = torch.sum(fn, dim=0)
-        tn_agg = torch.sum(tn, dim=0)
-
-        # This will now return a tensor of shape (C,), where C is the number of classes.
-        per_class_ious = smp.metrics.iou_score(tp_agg, fp_agg, fn_agg, tn_agg, reduction=None)
-        # --- END OF FIX ---
-
-        # print(f"[DEBUG] {stage} epoch end: Per-class IoUs raw output: {per_class_ious}")
-        for i, iou in enumerate(per_class_ious):
-            class_name = self.class_names[i]
-            # 'iou' is now a scalar tensor, so the .mean() part is not strictly necessary but doesn't hurt.
-            class_iou = iou.mean() if iou.numel() > 1 else iou
-            metrics[f"{stage}_iou_class_{class_name}"] = class_iou
-            # print(f"[DEBUG] {stage} epoch end: IoU for class '{class_name}' is: {class_iou}")
-
         self.log_dict(metrics, prog_bar=True)
-        # print(f"[DEBUG] {stage} epoch end: Final logged metrics: {metrics}")
 
     def training_step(self, batch, batch_idx):
-        train_loss_info = self.shared_step(batch, "train", batch_idx)
-        self.training_step_outputs.append(train_loss_info)
-        return train_loss_info
+        return self.shared_step(batch, "train", batch_idx)
 
     def on_train_epoch_end(self):
         self.shared_epoch_end(self.training_step_outputs, "train")
         self.training_step_outputs.clear()
 
     def validation_step(self, batch, batch_idx):
-        valid_loss_info = self.shared_step(batch, "valid", batch_idx)
-        self.validation_step_outputs.append(valid_loss_info)
-        return valid_loss_info
+        # We want to return the validation IOU so Optuna can track it
+        metrics = self.shared_step(batch, "valid", batch_idx)
+        self.validation_step_outputs.append(metrics)
+        return metrics
+
 
     def on_validation_epoch_end(self):
         self.shared_epoch_end(self.validation_step_outputs, "valid")
         self.validation_step_outputs.clear()
 
-    def test_step(self, batch, batch_idx):
-        test_loss_info = self.shared_step(batch, "test", batch_idx)
-        self.test_step_outputs.append(test_loss_info)
-        return test_loss_info
-
-    def on_test_epoch_end(self):
-        self.shared_epoch_end(self.test_step_outputs, "test")
-        self.test_step_outputs.clear()
 
     def configure_optimizers(self):
-        optimizer = self.optimizer_type(self.parameters(), lr=self.lr)
-        scheduler = self.scheduler_type(optimizer, T_max=self.t_max, eta_min=self.eta_min)
-        return {
-            "optimizer": optimizer,
-            "lr_scheduler": {
+        # We pass the weight_decay to the optimizer
+        optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.lr, weight_decay=self.hparams.weight_decay)
+
+        if self.hparams.scheduler_type == 'CosineAnnealingLR':
+            scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.hparams.t_max, eta_min=self.hparams.eta_min)
+        elif self.hparams.scheduler_type == 'OneCycleLR':
+            scheduler = lr_scheduler.OneCycleLR(optimizer, max_lr=self.hparams.lr, total_steps=self.hparams.t_max)
+        else:
+            raise ValueError("Unsupported scheduler type")
+            
+        # Optional: Add a learning rate warmup scheduler
+        if self.hparams.warmup_steps > 0:
+            warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
+                optimizer, start_factor=1e-6, end_factor=1.0, total_iters=self.hparams.warmup_steps
+            )
+            # Chain the warmup scheduler with the main scheduler
+            lr_scheduler_config = {
+                "scheduler": torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[warmup_scheduler, scheduler], milestones=[self.hparams.warmup_steps]),
+                "interval": "step",
+                "frequency": 1,
+            }
+        else:
+            lr_scheduler_config = {
                 "scheduler": scheduler,
                 "interval": "step",
                 "frequency": 1,
-        },
-}
-# %% [markdown]
-# # Create model and train
+            }
 
-# %%
+        return {"optimizer": optimizer, "lr_scheduler": lr_scheduler_config}
 
-if __name__ == '__main__':
-    # torch.multiprocessing.set_start_method('spawn', force=True)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    if not torch.cuda.is_available():
-        raise RuntimeError("CUDA is not available. Please ensure you have a compatible GPU and CUDA installed.")
-
+def objective(trial: optuna.Trial):
+    # -- 1. Define the hyperparameter search space ---
+    # We use trial.suggest_ to define the range and type of each hyperparameter.
     
+    # Categorical parameters
+    encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0", "mit_b1", "mit_b2", "mit_b3", "mit_b4"])
+    scheduler_type = trial.suggest_categorical("scheduler_type", ["CosineAnnealingLR", "OneCycleLR"])
+
+    # Integer parameters
+    batch_size = trial.suggest_categorical("batch_size", [4, 8, 16]) # Use categorical for specific values
+    warmup_steps = trial.suggest_int("warmup_steps", 0, 500)
+
+    # Float parameters
+    learning_rate = trial.suggest_float("lr", 1e-5, 1e-3, log=True)
+    weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
+    drop_path_rate = trial.suggest_float("drop_path_rate", 0.0, 0.3)
+    
+    # --- 2. Setup Datasets and Dataloaders ---
     base_path = os.path.join('..', 'dataset_processed')
-
-    # Assert all images 512x512
-    # Check that all images under the dataset_processed images directory are 512x512
-    images_dir = os.path.join(base_path, 'images')
-    for root, _, files in os.walk(images_dir):
-        for file in files:
-            if file.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff', '.tif')):
-                img_path = os.path.join(root, file)
-                with Image.open(img_path) as img:
-                    if img.size != (512, 512):
-                        raise AssertionError(f"Image {img_path} has size {img.size}, expected (512, 512)")
-
     images_path = os.path.join(base_path, 'images')
     masks_path = os.path.join(base_path, 'masks')
     splits_path = os.path.join(base_path, 'splits')
-
     
-    # resplit(base_path, train_frac=0.7, val_frac=0.15, test_frac=0.15)
-
-    training_transform_obj, training_transform_str = get_training_augmentation()
+    training_transform_obj, _ = get_training_augmentation()
     dataset_train = Dataset(
         image_root=images_path,
         mask_root=masks_path,
@@ -518,114 +489,85 @@ if __name__ == '__main__':
         transform=training_transform_obj
     )
 
-    validation_transform_obj, validation_transform_str = get_validation_augmentation()
-
+    validation_transform_obj, _ = get_validation_augmentation()
     dataset_val = Dataset(
         image_root=images_path,
         mask_root=masks_path,
         split_file=os.path.join(splits_path, 'val.txt'),
-        transform=validation_transform_obj  
+        transform=validation_transform_obj
     )
 
-    dataset_test = Dataset(
-        image_root=images_path,
-        mask_root=masks_path,
-        split_file=os.path.join(splits_path, 'test.txt'),
-        transform=validation_transform_obj  
-    )
+    train_loader = DataLoader(dataset_train, batch_size=batch_size, shuffle=True, num_workers=os.cpu_count() // 2, persistent_workers=True, pin_memory=True)
+    val_loader = DataLoader(dataset_val, batch_size=batch_size, shuffle=False, num_workers=os.cpu_count() // 2, persistent_workers=True, pin_memory=True)
 
-    # Some training hyperparameters TODO tune
+    # --- 3. Setup Model and Trainer ---
     EPOCHS = 35
-    BATCH_SIZE = 16
-    T_MAX = EPOCHS * math.ceil(len(dataset_train) / BATCH_SIZE)
-    OUT_CLASSES = len(Cls)
-
-    # Optimizer and scheduler parameters
-    OPTIMIZER_TYPE = torch.optim.Adam
-    LEARNING_RATE = 2e-4
-    SCHEDULER_TYPE = lr_scheduler.CosineAnnealingLR
-    ETA_MIN = 1e-5
-
-    # Architecture and encoder parameters
-    ARCH = "SegFormer"
-    ENCODER_NAME = "mit_b0"
-    ENCODER_WEIGHTS = "imagenet"
-
-    SEED = 42
-
-    # Verify that all datasets have been loaded successfully and are not empty.
-    print(f"Successfully loaded {len(dataset_train)} training samples.")
-    print(f"Successfully loaded {len(dataset_val)} validation samples.")
-    print(f"Successfully loaded {len(dataset_test)} test samples.")
-    assert len(dataset_train) > 0, "Training dataset is empty. Check your train.txt split file and paths."
-    assert len(dataset_val) > 0, "Validation dataset is empty. Check your val.txt split file and paths."
-    # Test dataset can sometimes be empty if not used, but it's good practice to check if you expect it.
-    assert len(dataset_test) > 0, "Test dataset is empty. Check your test.txt split file and paths."
+    T_MAX = EPOCHS * math.ceil(len(dataset_train) / batch_size)
     
-    # Assert that key hyperparameters are valid
-    assert BATCH_SIZE > 0, "Batch size must be a positive integer."
-    assert EPOCHS > 0, "Number of epochs must be a positive integer."
-
-    idx = random.randint(0, len(dataset_train) - 1)
-    image, mask, _ = dataset_train[idx] 
-    print(f"Showing image {idx} of {len(dataset_train)}")
-    print(f"Mask shape: {mask.shape}")
-    print(f"Image shape: {image.shape}")
-    visualize(image=image, mask=mask)
-
-
-    torch.set_float32_matmul_precision('medium') # TODO see if high is better or low doesn't make a difference
-
-    wandb_logger = WandbLogger(project="treefall-tornado-rating", log_model=True)
-
     model = CamVidModel(
-        ARCH,
-        ENCODER_NAME,
+        arch="SegFormer",
+        encoder_name=encoder_name,
         in_channels=3,
-        out_classes=OUT_CLASSES,
-        lr=LEARNING_RATE,
-        optimizer_type=OPTIMIZER_TYPE,
-        scheduler_type=SCHEDULER_TYPE,
+        out_classes=len(Cls),
+        lr=learning_rate,
+        optimizer_type=torch.optim.AdamW, # Using AdamW
+        scheduler_type=scheduler_type,
+        weight_decay=weight_decay,
+        drop_path_rate=drop_path_rate,
+        warmup_steps=warmup_steps,
         t_max=T_MAX,
-        eta_min=ETA_MIN,
-        encoder_weights=ENCODER_WEIGHTS,
-        freeze_encoder=True,  # Set to True if you want to freeze the encoder
-        ).to(device)
+        eta_min=1e-6, # A small minimum learning rate
+        freeze_encoder=False # Usually better to finetune the encoder
+    )
 
-    wandb_logger.experiment.config.update({
-        "epochs": EPOCHS,
-        "batch_size": BATCH_SIZE,
-        "t_max": T_MAX,
-        "optimizer": OPTIMIZER_TYPE.__name__,
-        "lr": LEARNING_RATE,
-        "scheduler": SCHEDULER_TYPE.__name__,
-        "min_lr": ETA_MIN,
-        "architecture": ARCH,
-        "encoder": ENCODER_NAME,
-        "encoder_weights": ENCODER_WEIGHTS,
-        "train_size": len(dataset_train),
-        "val_size": len(dataset_val),
-        "num_classes": OUT_CLASSES,
-        "training_transform": training_transform_str,
-        "validation_transform": validation_transform_str,
-    })
-
-    # TODO: Tune number of workers based on system
-    train_loader = DataLoader(dataset_train, batch_size=BATCH_SIZE, shuffle=True, num_workers=os.cpu_count() // 2, persistent_workers=True, pin_memory=True)
-    val_loader = DataLoader(dataset_val, batch_size=BATCH_SIZE, shuffle=False, num_workers=os.cpu_count() // 2, persistent_workers=True, pin_memory=True)
-
-    image_logging_callback = ImageLoggingCallback(num_samples_per_combo=3)
-
+    # --- 4. Configure Callbacks and Logger ---
+    # The Pruning Callback will monitor the validation dataset IoU and stop unpromising trials.
+    pruning_callback = PyTorchLightningPruningCallback(trial, monitor="valid_dataset_iou")
+    wandb_logger = WandbLogger(project="tree-tornado", group="BOHB-SegFormer", job_type='train')
+    
     trainer = pl.Trainer(
         max_epochs=EPOCHS,
+        logger=wandb_logger,
+        callbacks=[RichProgressBar(), pruning_callback],
+        accelerator="gpu",
+        devices=1,
         log_every_n_steps=25,
-        fast_dev_run=False,
-        callbacks=[RichProgressBar(), image_logging_callback], 
-        logger=wandb_logger
+    )
+    
+    # --- 5. Run Training and Return the Metric to Optimize ---
+    trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+    
+    # Return the value of the metric that should be maximized.
+    # The callback we defined above will report the 'valid_dataset_iou' to the trial.
+    # We can access it via trial.user_attrs.
+    return trainer.callback_metrics["valid_dataset_iou"].item()
+
+
+if __name__ == '__main__':
+    torch.set_float32_matmul_precision('medium')
+    pl.seed_everything(42)
+    
+    # --- 1. Create the Optuna Study ---
+    # We use the BOHBSampler for efficient searching.
+    # The HyperbandPruner is used to stop unpromising trials early.
+    study = optuna.create_study(
+        study_name="segformer-bohb-tuning",
+        direction="maximize", # We want to maximize the validation IoU
+        sampler=optuna.samplers.BOHBSampler(),
+        pruner=optuna.pruners.HyperbandPruner(
+            min_resource=1, max_resource=35, reduction_factor=3
+        ),
     )
 
-    trainer.fit(
-        model,
-        train_dataloaders=train_loader,
-        val_dataloaders=val_loader,
-    )
+    # --- 2. Start the optimization ---
+    # n_trials is the total number of hyperparameter combinations to test.
+    study.optimize(objective, n_trials=100, timeout=3600*6) # Run for 100 trials or 6 hours
+
+    # --- 3. Print the results ---
+    print("Number of finished trials: ", len(study.trials))
+    print("Best trial:")
+    best_trial = study.best_trial
+    print("  Value: ", best_trial.value)
+    print("  Params: ")
+    for key, value in best_trial.params.items():
+        print(f"    {key}: {value}")
