@@ -23,6 +23,7 @@ import wandb
 import os
 import optuna
 from optuna.integration import PyTorchLightningPruningCallback
+from torchmetrics.classification import MulticlassJaccardIndex
 
 class Cls(Enum):
     UPRIGHT = (0, "#b7f2a6")  # light green
@@ -343,6 +344,9 @@ class CamVidModel(pl.LightningModule):
             **kwargs,
         )
 
+        # Jaccard Index is the official name for IoU (Intersection over Union)
+        self.iou = MulticlassJaccardIndex(num_classes=out_classes)
+
         if freeze_encoder:
             for param in self.model.encoder.parameters():
                 param.requires_grad = False
@@ -360,107 +364,33 @@ class CamVidModel(pl.LightningModule):
     def forward(self, image):
         return self.model(image)
 
-    def shared_step(self, batch, stage, batch_idx):
+    def _common_step(self, batch, batch_idx, stage):
         image, mask, _ = batch
-        image = image.to(self.device)
-        mask = mask.to(self.device).long()
+        mask = mask.long() # Ensure mask is of type long
 
-        unique_mask_vals = torch.unique(mask)
-        assert unique_mask_vals.max() < self.number_of_classes, f"Mask contains class index {unique_mask_vals.max()} which is out of bounds for {self.number_of_classes} classes."
-        assert unique_mask_vals.min() >= 0, f"Mask contains negative class index {unique_mask_vals.min()}."
-
-        assert image.ndim == 4, "Expected image to have 4 dimensions, got shape " + str(image.shape)
-        assert mask.ndim == 3, "Expected mask to have 3 dimensions, got shape " + str(mask.shape)
-
+        logits = self.forward(image)
+        loss = self.loss_fn(logits, mask)
         
-        logits_mask = self.forward(image)
-        assert logits_mask.shape[1] == self.number_of_classes, f"Expected logits channel {self.number_of_classes}, got {logits_mask.shape[1]}"
-        logits_mask = logits_mask.contiguous()
-
-        loss = self.loss_fn(logits_mask, mask)
+        # Log the loss for this stage
+        self.log(f"{stage}_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
         
-        prob_mask = logits_mask.softmax(dim=1)
-        pred_mask = prob_mask.argmax(dim=1)
+        # Update the metric with predictions and targets
+        # The metric will automatically accumulate results internally
+        pred_mask = torch.argmax(logits, dim=1)
+        self.iou.update(pred_mask, mask)
         
-        tp, fp, fn, tn = smp.metrics.get_stats(
-            pred_mask, mask, mode="multiclass", num_classes=self.number_of_classes
-        )
-
-        return {
-            "loss": loss, "tp": tp, "fp": fp, "fn": fn, "tn": tn,
-        }
-
-    def shared_epoch_end(self, outputs, stage):
-        tp = torch.cat([x["tp"] for x in outputs])
-        fp = torch.cat([x["fp"] for x in outputs])
-        fn = torch.cat([x["fn"] for x in outputs])
-        tn = torch.cat([x["tn"] for x in outputs])
-
-        # Per-image IoU for a general sense of performance
-        per_image_iou = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro-imagewise")
-        # Dataset-level IoU (micro-average) is a robust metric for overall performance
-        dataset_iou_micro = smp.metrics.iou_score(tp, fp, fn, tn, reduction="micro")
-
-        metrics = {
-            f"{stage}_per_image_iou": per_image_iou,
-            f"{stage}_dataset_iou": dataset_iou_micro,
-        }
-        self.log_dict(metrics, prog_bar=True)
+        # Log the IoU. Lightning will calculate it at the end of the epoch.
+        # This replaces the need for `shared_epoch_end`
+        self.log(f"{stage}_dataset_iou", self.iou, on_step=False, on_epoch=True, prog_bar=True)
+        
+        return loss
 
     def training_step(self, batch, batch_idx):
-        metrics = self.shared_step(batch, "train", batch_idx)
-        
-        self.training_step_outputs.append(metrics)
-        
-        return metrics["loss"]
-
-    def on_train_epoch_end(self):
-        self.shared_epoch_end(self.training_step_outputs, "train")
-        self.training_step_outputs.clear()
+        return self._common_step(batch, batch_idx, "train")
 
     def validation_step(self, batch, batch_idx):
-        # We want to return the validation IOU so Optuna can track it
-        metrics = self.shared_step(batch, "valid", batch_idx)
-        self.validation_step_outputs.append(metrics)
-        return metrics
-
-
-    def on_validation_epoch_end(self):
-        self.shared_epoch_end(self.validation_step_outputs, "valid")
-        self.validation_step_outputs.clear()
-
-
-    def configure_optimizers(self):
-        # We pass the weight_decay to the optimizer
-        optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.lr, weight_decay=self.hparams.weight_decay)
-
-        if self.hparams.scheduler_type == 'CosineAnnealingLR':
-            scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.hparams.t_max, eta_min=self.hparams.eta_min)
-        elif self.hparams.scheduler_type == 'OneCycleLR':
-            scheduler = lr_scheduler.OneCycleLR(optimizer, max_lr=self.hparams.lr, total_steps=self.hparams.t_max)
-        else:
-            raise ValueError("Unsupported scheduler type")
-            
-        # Optional: Add a learning rate warmup scheduler
-        if self.hparams.warmup_steps > 0:
-            warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
-                optimizer, start_factor=1e-6, end_factor=1.0, total_iters=self.hparams.warmup_steps
-            )
-            # Chain the warmup scheduler with the main scheduler
-            lr_scheduler_config = {
-                "scheduler": torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[warmup_scheduler, scheduler], milestones=[self.hparams.warmup_steps]),
-                "interval": "step",
-                "frequency": 1,
-            }
-        else:
-            lr_scheduler_config = {
-                "scheduler": scheduler,
-                "interval": "step",
-                "frequency": 1,
-            }
-
-        return {"optimizer": optimizer, "lr_scheduler": lr_scheduler_config}
-
+        return self._common_step(batch, batch_idx, "valid")
+ 
 def objective(trial: optuna.Trial):
     # -- 1. Define the hyperparameter search space ---
     # We use trial.suggest_ to define the range and type of each hyperparameter.
