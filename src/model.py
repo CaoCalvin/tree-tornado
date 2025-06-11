@@ -366,22 +366,22 @@ class CamVidModel(pl.LightningModule):
 
     def _common_step(self, batch, batch_idx, stage):
         image, mask, _ = batch
-        mask = mask.long() # Ensure mask is of type long
+        mask = mask.long()
+
+        # Get the batch size directly from the input tensor
+        batch_size = image.shape[0]
 
         logits = self.forward(image)
         loss = self.loss_fn(logits, mask)
         
-        # Log the loss for this stage
-        self.log(f"{stage}_loss", loss, on_step=True, on_epoch=True, prog_bar=True)
+        # Pass the batch_size to self.log()
+        self.log(f"{stage}_loss", loss, on_step=True, on_epoch=True, prog_bar=True, batch_size=batch_size)
         
-        # Update the metric with predictions and targets
-        # The metric will automatically accumulate results internally
         pred_mask = torch.argmax(logits, dim=1)
         self.iou.update(pred_mask, mask)
         
-        # Log the IoU. Lightning will calculate it at the end of the epoch.
-        # This replaces the need for `shared_epoch_end`
-        self.log(f"{stage}_dataset_iou", self.iou, on_step=False, on_epoch=True, prog_bar=True)
+        # Also pass it here for the IoU metric
+        self.log(f"{stage}_dataset_iou", self.iou, on_step=False, on_epoch=True, prog_bar=True, batch_size=batch_size)
         
         return loss
 
