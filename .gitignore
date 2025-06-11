@@ -1,7 +1,7 @@
 src/wandb/
 src/model.ipynb
 src/lightning_logs/
-src/treefall-tornado-rating/ 
+src/tree-tornado/ 
 # Data
 data/
 dataset/
