@@ -317,7 +317,7 @@ class ImageLoggingCallback(pl.Callback):
                 # Create randomly ordered indices to shuffle the images
                 indices = torch.randperm(images.shape[0])
 
-                for i in range(indices):
+                for i in indices:
                     gt_mask = gt_masks[i]
                     present_classes = frozenset(torch.unique(gt_mask).cpu().numpy())
                     current_count = self.combination_counts.get(present_classes, 0)
@@ -586,7 +586,7 @@ def objective(trial: optuna.Trial):
 
 if __name__ == '__main__':
     # print(pl.__version__)
-    os.environ["WANDB_MODE"] = "disabled"
+    os.environ["WANDB_MODE"] = "online"
 
     torch.set_float32_matmul_precision('medium')
     pl.seed_everything(42)
