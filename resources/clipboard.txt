@@ -1,6 +1,237 @@
-Z:\Miniconda\envs\ml-env\lib\site-packages\lightning\pytorch\utilities\data.py:79: Trying to infer the `batch_size` from an ambiguous collection. The batch size we found is 3. To     
-avoid any miscalculations, use `self.log(..., batch_size=batch_size)`.
-Z:\Miniconda\envs\ml-env\lib\site-packages\lightning\pytorch\utilities\data.py:79: Trying to infer the `batch_size` from an ambiguous collection. The batch size we found is 9. To     
-avoid any miscalculations, use `self.log(..., batch_size=batch_size)`.
-Z:\Miniconda\envs\ml-env\lib\site-packages\torchmetrics\utilities\prints.py:43: UserWarning: The ``compute`` method of metric MulticlassJaccardIndex was called before the ``update``  
-method which may lead to errors, as metric states have not yet been updated.
+Windows PowerShell
+Copyright (C) Microsoft Corporation. All rights reserved.
+                                                                                                                        Try the new cross-platform PowerShell https://aka.ms/pscore6                                                                                                                                                                                    PS C:\WINDOWS\system32> Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Server*'                                                                                                                                               
+Name  : OpenSSH.Server~~~~0.0.1.0
+State : NotPresent
+
+
+
+PS C:\WINDOWS\system32> Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+Add-WindowsCapability : Add-WindowsCapability failed. Error code = 0x800f0954
+At line:1 char:1
++ Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (:) [Add-WindowsCapability], COMException
+    + FullyQualifiedErrorId : Microsoft.Dism.Commands.AddWindowsCapabilityCommand
+
+PS C:\WINDOWS\system32> Start-Service sshd
+Start-Service : Cannot find any service with service name 'sshd'.
+At line:1 char:1
++ Start-Service sshd
++ ~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (sshd:String) [Start-Service], ServiceCommandException
+    + FullyQualifiedErrorId : NoServiceFoundForGivenName,Microsoft.PowerShell.Commands.StartServiceCommand
+
+PS C:\WINDOWS\system32> Set-Service -Name sshd -StartupType 'Automatic'
+Set-Service : Service sshd was not found on computer '.'.
+At line:1 char:1
++ Set-Service -Name sshd -StartupType 'Automatic'
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (.:String) [Set-Service], InvalidOperationException
+    + FullyQualifiedErrorId : InvalidOperationException,Microsoft.PowerShell.Commands.SetServiceCommand
+
+PS C:\WINDOWS\system32> New-NetFirewallRule -Name sshd -DisplayName 'OpenSSH Server (sshd)' -Enabled True -Direction Inbound -Protocol TCP -Action Allow -LocalPort 22
+
+
+Name                          : sshd
+DisplayName                   : OpenSSH Server (sshd)
+Description                   :
+DisplayGroup                  :
+Group                         :
+Enabled                       : True
+Profile                       : Any
+Platform                      : {}
+Direction                     : Inbound
+Action                        : Allow
+EdgeTraversalPolicy           : Block
+LooseSourceMapping            : False
+LocalOnlyMapping              : False
+Owner                         :
+PrimaryStatus                 : OK
+Status                        : The rule was parsed successfully from the store. (65536)
+EnforcementStatus             : NotApplicable
+PolicyStoreSource             : PersistentStore
+PolicyStoreSourceType         : Local
+RemoteDynamicKeywordAddresses :
+PolicyAppId                   :
+
+
+
+PS C:\WINDOWS\system32> &icacls Z:\OpenSSH-Win64\libcrypto.dll /grant Everyone:RX
+processed file: Z:\OpenSSH-Win64\libcrypto.dll
+Successfully processed 1 files; Failed processing 0 files
+PS C:\WINDOWS\system32> Z:\install_sshd.ps1
+Z:\install_sshd.ps1 : The term 'Z:\install_sshd.ps1' is not recognized as the name of a cmdlet, function, script file,
+or operable program. Check the spelling of the name, or if a path was included, verify that the path is correct and
+try again.
+At line:1 char:1
++ Z:\install_sshd.ps1
++ ~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (Z:\install_sshd.ps1:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
+
+PS C:\WINDOWS\system32> Z:\OpenSSH-Win64\install-sshd.ps1
+Z:\OpenSSH-Win64\install-sshd.ps1 : File Z:\OpenSSH-Win64\install-sshd.ps1 cannot be loaded because running scripts is
+disabled on this system. For more information, see about_Execution_Policies at
+https:/go.microsoft.com/fwlink/?LinkID=135170.
+At line:1 char:1
++ Z:\OpenSSH-Win64\install-sshd.ps1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : SecurityError: (:) [], PSSecurityException
+    + FullyQualifiedErrorId : UnauthorizedAccess
+PS C:\WINDOWS\system32> Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope CurrentUser
+
+Execution Policy Change
+The execution policy helps protect you from scripts that you do not trust. Changing the execution policy might expose
+you to the security risks described in the about_Execution_Policies help topic at
+https:/go.microsoft.com/fwlink/?LinkID=135170. Do you want to change the execution policy?
+[Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "N"): a
+PS C:\WINDOWS\system32> Z:\OpenSSH-Win64\install-sshd.ps1
+
+Security warning
+Run only scripts that you trust. While scripts from the internet can be useful, this script can potentially harm your
+computer. If you trust this script, use the Unblock-File cmdlet to allow the script to run without this warning
+message. Do you want to run Z:\OpenSSH-Win64\install-sshd.ps1?
+[D] Do not run  [R] Run once  [S] Suspend  [?] Help (default is "D"): r
+
+Security warning
+Run only scripts that you trust. While scripts from the internet can be useful, this script can potentially harm your
+computer. If you trust this script, use the Unblock-File cmdlet to allow the script to run without this warning
+message. Do you want to run Z:\OpenSSH-Win64\OpenSSHUtils.psm1?
+[D] Do not run  [R] Run once  [S] Suspend  [?] Help (default is "D"): r
+  [*] Z:\OpenSSH-Win64\moduli
+Inheritance is removed from 'Z:\OpenSSH-Win64\moduli'.
+'NT AUTHORITY\Authenticated Users' now has Read access to 'Z:\OpenSSH-Win64\moduli'.
+'BUILTIN\Users' now has Read access to 'Z:\OpenSSH-Win64\moduli'.
+      Repaired permissions
+
+  [*] C:\ProgramData\ssh
+      looks good
+
+[SC] SetServiceObjectSecurity SUCCESS
+[SC] ChangeServiceConfig2 SUCCESS
+[SC] ChangeServiceConfig2 SUCCESS
+sshd and ssh-agent services successfully installed
+Updated Machine PATH to include OpenSSH directory, restart/re-login required to take effect globally
+PS C:\WINDOWS\system32> &sc.exe config sshd start= auto, &sc.exe config ssh-agent start= auto
+At line:1 char:33
++ &sc.exe config sshd start= auto, &sc.exe config ssh-agent start= auto
++                                 ~
+Missing expression after ',' in pipeline element.
+At line:1 char:34
++ &sc.exe config sshd start= auto, &sc.exe config ssh-agent start= auto
++                                  ~
+The ampersand (&) character is not allowed. The & operator is reserved for future use; wrap an ampersand in double
+quotation marks ("&") to pass it as part of a string.
+    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException
+    + FullyQualifiedErrorId : MissingExpression
+
+PS C:\WINDOWS\system32> &sc.exe config sshd start= auto
+[SC] ChangeServiceConfig SUCCESS
+PS C:\WINDOWS\system32> &sc.exe config ssh-agent start= auto
+[SC] ChangeServiceConfig SUCCESS
+PS C:\WINDOWS\system32> &sc.exe start sshd
+
+SERVICE_NAME: sshd
+        TYPE               : 10  WIN32_OWN_PROCESS
+        STATE              : 2  START_PENDING
+                                (NOT_STOPPABLE, NOT_PAUSABLE, IGNORES_SHUTDOWN)
+        WIN32_EXIT_CODE    : 0  (0x0)
+        SERVICE_EXIT_CODE  : 0  (0x0)
+        CHECKPOINT         : 0x1
+        WAIT_HINT          : 0x12c
+        PID                : 15148
+        FLAGS              :
+PS C:\WINDOWS\system32>  &sc.exe start ssh-agent
+
+SERVICE_NAME: ssh-agent
+        TYPE               : 10  WIN32_OWN_PROCESS
+        STATE              : 2  START_PENDING
+                                (NOT_STOPPABLE, NOT_PAUSABLE, IGNORES_SHUTDOWN)
+        WIN32_EXIT_CODE    : 0  (0x0)
+        SERVICE_EXIT_CODE  : 0  (0x0)
+        CHECKPOINT         : 0x0
+        WAIT_HINT          : 0x7d0                                                                                              PID                : 18744                                                                                              FLAGS              :                                                                                            PS C:\WINDOWS\system32> New-NetFirewallRule `                                                                           >>   -Name sshd `                                                                                                       >>   -DisplayName 'OpenSSH SSH Server' `
+>>   -Enabled True `
+>>   -Direction Inbound `
+>>   -Protocol TCP `
+>>   -Action Allow `
+>>   -LocalPort 22 `
+>>   -Program "C:\Windows\System32\OpenSSH\sshd.exe"
+New-NetFirewallRule : Cannot create a file when that file already exists.
+At line:1 char:1
++ New-NetFirewallRule `
++ ~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ResourceExists: (MSFT_NetFirewallRule:root/standardcimv2/MSFT_NetFirewallRule) [New-NetF
+   irewallRule], CimException
+    + FullyQualifiedErrorId : Windows System Error 183,New-NetFirewallRule
+
+PS C:\WINDOWS\system32> New-NetFirewallRule `
+>>   -Name sshd `
+>>   -DisplayName 'OpenSSH SSH Server Actual' `
+>>   -Enabled True `
+>>   -Direction Inbound `
+>>   -Protocol TCP `
+>>   -Action Allow `
+>>   -LocalPort 22 `
+>>   -Program "Z:\OpenSSH-Win64\sshd.exe"
+New-NetFirewallRule : Cannot create a file when that file already exists.
+At line:1 char:1
++ New-NetFirewallRule `
++ ~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ResourceExists: (MSFT_NetFirewallRule:root/standardcimv2/MSFT_NetFirewallRule) [New-NetF
+   irewallRule], CimException
+    + FullyQualifiedErrorId : Windows System Error 183,New-NetFirewallRule
+
+PS C:\WINDOWS\system32> Remove-NetFirewallRule -DisplayName 'OpenSSH SSH Server'
+Remove-NetFirewallRule : No MSFT_NetFirewallRule objects found with property 'DisplayName' equal to 'OpenSSH SSH
+Server'.  Verify the value of the property and retry.
+At line:1 char:1
++ Remove-NetFirewallRule -DisplayName 'OpenSSH SSH Server'
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (OpenSSH SSH Server:String) [Remove-NetFirewallRule], CimJobException
+    + FullyQualifiedErrorId : CmdletizationQuery_NotFound_DisplayName,Remove-NetFirewallRule
+
+PS C:\WINDOWS\system32> Remove-NetFirewallRule -Name 'sshd'
+PS C:\WINDOWS\system32> New-NetFirewallRule `
+>>   -Name sshd `
+>>   -DisplayName 'OpenSSH SSH Server Actual' `
+>>   -Enabled True `
+>>   -Direction Inbound `
+>>   -Protocol TCP `
+>>   -Action Allow `
+>>   -LocalPort 22 `
+>>   -Program "Z:\OpenSSH-Win64\sshd.exe"
+
+
+Name                          : sshd
+DisplayName                   : OpenSSH SSH Server Actual
+Description                   :
+DisplayGroup                  :
+Group                         :
+Enabled                       : True
+Profile                       : Any
+Platform                      : {}
+Direction                     : Inbound
+Action                        : Allow
+EdgeTraversalPolicy           : Block
+LooseSourceMapping            : False
+LocalOnlyMapping              : False
+Owner                         :
+PrimaryStatus                 : OK
+Status                        : The rule was parsed successfully from the store. (65536)
+EnforcementStatus             : NotApplicable
+PolicyStoreSource             : PersistentStore
+PolicyStoreSourceType         : Local
+RemoteDynamicKeywordAddresses :
+PolicyAppId                   :
+
+
+(ml-env) Z:\tree-tornado\src>python model.py
+wandb: W&B API key is configured. Use `wandb login --relogin` to force relogin
+wandb: ERROR Error while calling W&B API: googleapi: Error 503: Visibility check was unavailable. Please retry the 
+request and contact support if the problem persists, backendError (<Response [500]>)
+wandb: ERROR Error while calling W&B API: googleapi: Error 503: Visibility check was unavailable. Please retry the 
+request and contact support if the problem persists, backendError (<Response [500]>)
+wandb: ⡿ creating run (1.5m)
+

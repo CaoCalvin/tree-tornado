@@ -245,6 +245,7 @@ class ImageLoggingCallback(pl.Callback):
                                          unique class combination.
         """
         super().__init__()
+        self.img_logging_interval = img_logging_interval
         self.num_samples_per_combo = num_samples_per_combo
         self.class_labels = {cls.value: cls.name for cls in Cls}
         self.class_colors = {cls.value: cls.rgb_color for cls in Cls}  # to get color info
@@ -289,7 +290,7 @@ class ImageLoggingCallback(pl.Callback):
         if trainer.sanity_checking:
             return
 
-        if trainer.current_epoch % img_logging_interval != 0:
+        if trainer.current_epoch % self.img_logging_interval != 0:
             return
 
         # Correctly select the validation dataloader
@@ -585,6 +586,8 @@ def objective(trial: optuna.Trial):
 
 if __name__ == '__main__':
     # print(pl.__version__)
+
+    wandb.init(settings=wandb.Settings(init_timeout=120))
 
     torch.set_float32_matmul_precision('medium')
     pl.seed_everything(42)
