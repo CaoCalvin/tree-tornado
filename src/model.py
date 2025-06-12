@@ -535,8 +535,7 @@ def objective(trial: optuna.Trial):
     val_loader = DataLoader(dataset_val, batch_size=batch_size, shuffle=False, num_workers=os.cpu_count() // 2, persistent_workers=True, pin_memory=True)
 
     # --- 3. Setup Model and Trainer ---
-    EPOCHS = 35
-    T_MAX = EPOCHS * math.ceil(len(dataset_train) / batch_size)
+    T_MAX = EPOCHS_MAX * math.ceil(len(dataset_train) / batch_size)
     
     model = CamVidModel(
         arch="SegFormer",
@@ -561,7 +560,7 @@ def objective(trial: optuna.Trial):
     wandb_logger = WandbLogger(project="tree-tornado", group="BOHB-SegFormer", job_type='train')
     
     trainer = pl.Trainer(
-        max_epochs=EPOCHS,
+        max_epochs=EPOCHS_MAX,
         logger=wandb_logger,
         callbacks=[RichProgressBar(), pruning_callback, image_logging_callback],  # Added callback here
         accelerator="gpu",
@@ -583,6 +582,8 @@ if __name__ == '__main__':
 
     torch.set_float32_matmul_precision('medium')
     pl.seed_everything(42)
+
+    EPOCHS_MAX = 55
     
     # --- 1. Create the Optuna Study ---
     # We use the BOHBSampler for efficient searching.
@@ -592,7 +593,7 @@ if __name__ == '__main__':
         direction="maximize", # We want to maximize the validation IoU
         sampler=optuna.samplers.TPESampler(multivariate=True),
         pruner=optuna.pruners.HyperbandPruner(
-            min_resource=1, max_resource=35, reduction_factor=3
+            min_resource=1, max_resource=EPOCHS_MAX, reduction_factor=3
         ),
     )
 
