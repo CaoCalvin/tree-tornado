@@ -196,35 +196,43 @@ def get_validation_augmentation():
 
     return transform, str(transform)
 
-def visualize(**images):
-    """Plot images in one row."""
-    n = len(images)
-    plt.figure(figsize=(16, 5))
-    for i, (name, img) in enumerate(images.items()):
-        plt.subplot(1, n, i + 1)
-        plt.xticks([])
-        plt.yticks([])
-        plt.title(" ".join(name.split("_")).title())
-        if name == "image":
-            # Check if image is in CHW format; if so, convert it to HWC for plotting
-            if isinstance(img, torch.Tensor):
-                if img.shape[0] == 3:
-                    img = img.permute(1, 2, 0).cpu().numpy()
-            else:
-                if img.shape[0] == 3:
-                    img = img.transpose(1, 2, 0)
-            # Remove ImageNet normalization by inverting it
-            mean = np.array([0.485, 0.456, 0.406])
-            std = np.array([0.229, 0.224, 0.225])
-            img = img * std + mean
-            img = np.clip(img, 0, 1)
-            plt.imshow(img)
-        else:
-            # Convert greyscale integer mask to RGB colored mask using the enum directly.
-            color_mask = np.zeros((*img.shape, 3), dtype=np.uint8)
-            for cls_member in Cls:
-                color_mask[img == cls_member.value] = cls_member.rgb_color
-            plt.imshow(color_mask)
+def visualize(image, gt_mask, pred_mask):
+    """
+    Creates a side-by-side visualization of ground truth and prediction overlays.
+
+    Args:
+        image (torch.Tensor): The input image tensor (C, H, W).
+        gt_mask (torch.Tensor): The ground truth mask tensor (H, W).
+        pred_mask (torch.Tensor): The predicted mask tensor (H, W).
+
+    Returns:
+        np.array: A single RGB image array (uint8) showing the side-by-side overlays.
+    """
+    # 1. Denormalize image and convert to a displayable NumPy array
+    mean = torch.tensor([0.485, 0.456, 0.406], device=image.device).view(3, 1, 1)
+    std = torch.tensor([0.229, 0.224, 0.225], device=image.device).view(3, 1, 1)
+    image_vis = (image * std + mean).clamp(0, 1)
+    image_np = (image_vis.permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
+
+    # Convert masks to NumPy arrays
+    gt_mask_np = gt_mask.cpu().numpy().astype(np.uint8)
+    pred_mask_np = pred_mask.cpu().numpy().astype(np.uint8)
+
+    # 2. Helper function to create a single overlay
+    def _create_overlay(img, mask):
+        color_mask = np.zeros_like(img, dtype=np.uint8)
+        for cls_member in Cls:
+            color_mask[mask == cls_member.value] = cls_member.rgb_color
+        return cv2.addWeighted(img, 0.5, color_mask, 0.5, 0)
+
+    # 3. Create overlays for ground truth and prediction
+    gt_overlay = _create_overlay(image_np, gt_mask_np)
+    pred_overlay = _create_overlay(image_np, pred_mask_np)
+
+    # 4. Concatenate side-by-side and return
+    return np.concatenate([gt_overlay, pred_overlay], axis=1)
+
+
 class ImageLoggingCallback(pl.Callback):
     """
     Logs a batch of validation samples to W&B, including side-by-side overlays
@@ -272,6 +280,10 @@ class ImageLoggingCallback(pl.Callback):
             return False
         return all(count >= self.num_samples_per_combo for count in self.combination_counts.values())
     
+    def on_validation_epoch_start(self, trainer, pl_module):
+        if not trainer.sanity_checking:
+            self.combination_counts = {}
+
     def on_validation_epoch_end(self, trainer, pl_module):
         # Skip during sanity check
         if trainer.sanity_checking:
@@ -297,6 +309,7 @@ class ImageLoggingCallback(pl.Callback):
                 logits = pl_module(images)
                 pred_masks = torch.argmax(logits, dim=1)
 
+
                 for i in range(images.shape[0]):
                     gt_mask = gt_masks[i]
                     present_classes = frozenset(torch.unique(gt_mask).cpu().numpy())
@@ -305,23 +318,16 @@ class ImageLoggingCallback(pl.Callback):
                     if present_classes in self.target_combinations and current_count < self.num_samples_per_combo:
                         self.combination_counts[present_classes] = current_count + 1
 
-                        # Prepare the image (reverse normalization to [0,255])
-                        image_vis = (images[i].unsqueeze(0) * std + mean).clamp(0, 1)
-                        image_vis_np = (image_vis.squeeze(0).permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
-
-                        gt_mask_np = gt_mask.cpu().numpy().astype(np.uint8)
-                        pred_mask_np = pred_masks[i].cpu().numpy().astype(np.uint8)
-
-                        # Create overlay images for ground truth and prediction
-                        gt_overlay = self._create_overlay(image_vis_np, gt_mask_np)
-                        pred_overlay = self._create_overlay(image_vis_np, pred_mask_np)
-                        
-                        # Concatenate overlays side by side
-                        combined_overlay = np.concatenate([gt_overlay, pred_overlay], axis=1)
+                        # Use the new, clean visualize function
+                        combined_overlay = visualize(
+                            image=images[i],
+                            gt_mask=gt_mask,
+                            pred_mask=pred_masks[i]
+                        )
 
                         filename = os.path.basename(img_paths[i])
                         class_names = [self.class_labels[c] for c in sorted(list(present_classes))]
-                        caption = f"Overlays - Ground Truth (left) | Prediction (right)\nClasses: {class_names}, Sample #{current_count + 1}"
+                        caption = f"GT (left) | Pred (right) | Classes: {class_names} | Sample #{current_count + 1}"
 
                         wandb_image = wandb.Image(
                             combined_overlay,
@@ -329,8 +335,12 @@ class ImageLoggingCallback(pl.Callback):
                             file_type="jpg",
                         )
                         
-                        # Log the image with its filename as the key
                         trainer.logger.experiment.log({f"Validation Samples/{filename}": wandb_image})
+
+                        # If we have logged all required images, we can stop iterating
+                        if self._is_done():
+                            return
+
 class CamVidModel(pl.LightningModule):
     def __init__(self, arch, encoder_name, in_channels, out_classes, lr, optimizer_type, scheduler_type, weight_decay, drop_path_rate, warmup_steps, t_max, eta_min, freeze_encoder, **kwargs):
         super().__init__()
