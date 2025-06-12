@@ -487,9 +487,8 @@ def objective(trial: optuna.Trial):
     # -- 1. Define the hyperparameter search space ---
     # We use trial.suggest_ to define the range and type of each hyperparameter.
     
-    """
     # Categorical parameters
-    encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0", "mit_b1", "mit_b2", "mit_b3", "mit_b4"])
+    encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0", "mit_b1", "mit_b2", "mit_b3", "mit_b4", "mit_b5"])
     scheduler_type = trial.suggest_categorical("scheduler_type", ["CosineAnnealingLR", "OneCycleLR"])
 
     # Integer parameters
@@ -500,6 +499,7 @@ def objective(trial: optuna.Trial):
     learning_rate = trial.suggest_float("lr", 1e-5, 1e-3, log=True)
     weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
     drop_path_rate = trial.suggest_float("drop_path_rate", 0.0, 0.3)
+
     """
     # Categorical parameters
     encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0"])
@@ -513,7 +513,7 @@ def objective(trial: optuna.Trial):
     learning_rate = trial.suggest_float("lr", 1e-3, 1e-3, log=True)
     weight_decay = trial.suggest_float("weight_decay", 1e-3, 1e-3, log=True)
     drop_path_rate = trial.suggest_float("drop_path_rate", 0.1, 0.1)
-    
+    """
 
 
     # --- 2. Setup Datasets and Dataloaders ---
@@ -557,7 +557,7 @@ def objective(trial: optuna.Trial):
         warmup_steps=warmup_steps,
         t_max=T_MAX,
         eta_min=1e-6, # A small minimum learning rate
-        freeze_encoder=True # Usually better to finetune the encoder
+        freeze_encoder=False # Usually better to finetune the encoder
     )
 
     # --- 4. Configure Callbacks and Logger ---
@@ -586,8 +586,7 @@ def objective(trial: optuna.Trial):
 
 if __name__ == '__main__':
     # print(pl.__version__)
-
-    wandb.init(settings=wandb.Settings(init_timeout=120))
+    os.environ["WANDB_MODE"] = "disabled"
 
     torch.set_float32_matmul_precision('medium')
     pl.seed_everything(42)
