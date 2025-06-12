@@ -238,7 +238,7 @@ class ImageLoggingCallback(pl.Callback):
     Logs a batch of validation samples to W&B, including side-by-side overlays
     of the image with the ground truth mask (left) and the image with the predicted mask (right).
     """
-    def __init__(self, num_samples_per_combo=1):
+    def __init__(self, num_samples_per_combo=1, img_logging_interval=5):
         """
         Args:
             num_samples_per_combo (int): The number of images to log for each
@@ -289,6 +289,9 @@ class ImageLoggingCallback(pl.Callback):
         if trainer.sanity_checking:
             return
 
+        if trainer.current_epoch % img_logging_interval != 0:
+            return
+
         # Correctly select the validation dataloader
         val_dataloaders = trainer.val_dataloaders
         val_loader = val_dataloaders[0] if isinstance(val_dataloaders, list) else val_dataloaders
@@ -310,7 +313,10 @@ class ImageLoggingCallback(pl.Callback):
                 pred_masks = torch.argmax(logits, dim=1)
 
 
-                for i in range(images.shape[0]):
+                # Create randomly ordered indices to shuffle the images
+                indices = torch.randperm(images.shape[0])
+
+                for i in range(indices):
                     gt_mask = gt_masks[i]
                     present_classes = frozenset(torch.unique(gt_mask).cpu().numpy())
                     current_count = self.combination_counts.get(present_classes, 0)
@@ -335,7 +341,7 @@ class ImageLoggingCallback(pl.Callback):
                             file_type="jpg",
                         )
                         
-                        trainer.logger.experiment.log({f"Validation Samples/{filename}": wandb_image})
+                        trainer.logger.experiment.log({f"Validation Samples/Epoch {trainer.current_epoch}/{filename}": wandb_image})
 
                         # If we have logged all required images, we can stop iterating
                         if self._is_done():
@@ -556,7 +562,7 @@ def objective(trial: optuna.Trial):
     # --- 4. Configure Callbacks and Logger ---
     # The Pruning Callback will monitor the validation dataset IoU and stop unpromising trials.
     pruning_callback = PyTorchLightningPruningCallback(trial, monitor="valid_iou_overall")
-    image_logging_callback = ImageLoggingCallback(num_samples_per_combo=1)  # Instantiate the callback
+    image_logging_callback = ImageLoggingCallback(num_samples_per_combo=1, img_logging_interval=1)  # Instantiate the callback
     wandb_logger = WandbLogger(project="tree-tornado", group="BOHB-SegFormer", job_type='train')
     
     trainer = pl.Trainer(
