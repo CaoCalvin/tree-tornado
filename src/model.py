@@ -225,17 +225,11 @@ def visualize(**images):
             for cls_member in Cls:
                 color_mask[img == cls_member.value] = cls_member.rgb_color
             plt.imshow(color_mask)
-
 class ImageLoggingCallback(pl.Callback):
     """
-    Logs a batch of validation samples to W&B, including the input image,
-    ground truth mask, and the model's predicted mask.
-
-    This callback finds a specified number of images for each unique
-    combination of classes present in the ground truth masks of the
-    validation set.
+    Logs a batch of validation samples to W&B, including side-by-side overlays
+    of the image with the ground truth mask (left) and the image with the predicted mask (right).
     """
-    # --- MODIFICATION START ---
     def __init__(self, num_samples_per_combo=1):
         """
         Args:
@@ -243,43 +237,53 @@ class ImageLoggingCallback(pl.Callback):
                                          unique class combination.
         """
         super().__init__()
-        # Store the number of samples to log for each combination
         self.num_samples_per_combo = num_samples_per_combo
         self.class_labels = {cls.value: cls.name for cls in Cls}
+        self.class_colors = {cls.value: cls.rgb_color for cls in Cls}  # to get color info
         
         # Dynamically generate all possible non-empty subsets of class values
         class_values = [cls.value for cls in Cls]
         all_combinations = chain.from_iterable(combinations(class_values, r) for r in range(1, len(class_values) + 1))
         self.target_combinations = {frozenset(combo) for combo in all_combinations}
         
-        # Use a dictionary to count how many we've logged for each combination
+        # Counter for each combination
         self.combination_counts = {}
-    # --- MODIFICATION END ---
+
+    def _create_overlay(self, image, mask):
+        """
+        Creates an overlay of the mask on top of the image.
+        Args:
+            image (np.array): The image array (H, W, 3) as uint8.
+            mask (np.array): The mask array (H, W) as uint8.
+        Returns:
+            np.array: The blended overlay image.
+        """
+        # Create a blank color mask
+        color_mask = np.zeros_like(image)
+        for class_val, color in self.class_colors.items():
+            color_mask[mask == class_val] = np.array(color, dtype=np.uint8)
+        # Blend the original image with the color mask.
+        overlay = cv2.addWeighted(image, 0.5, color_mask, 0.5, 0)
+        return overlay
 
     def _is_done(self):
         """Checks if we have logged the desired number of samples for all combinations."""
         if len(self.combination_counts) < len(self.target_combinations):
             return False
-        
         return all(count >= self.num_samples_per_combo for count in self.combination_counts.values())
     
     def on_validation_epoch_end(self, trainer, pl_module):
-        # Skip the callback during the sanity check
+        # Skip during sanity check
         if trainer.sanity_checking:
             return
 
-        # Correctly get the validation dataloader
+        # Correctly select the validation dataloader
         val_dataloaders = trainer.val_dataloaders
-        if isinstance(val_dataloaders, list):
-            val_loader = val_dataloaders[0]
-        else:
-            val_loader = val_dataloaders
+        val_loader = val_dataloaders[0] if isinstance(val_dataloaders, list) else val_dataloaders
 
         device = pl_module.device
-
         mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(1, 3, 1, 1)
         std = torch.tensor([0.229, 0.224, 0.225], device=device).view(1, 3, 1, 1)
-
 
         pl_module.eval()
         with torch.no_grad():
@@ -287,7 +291,7 @@ class ImageLoggingCallback(pl.Callback):
                 if self._is_done():
                     break
 
-                # Unpack the image paths from the batch
+                # Unpack the batch and send to device
                 images, gt_masks, img_paths = batch
                 images, gt_masks = images.to(device), gt_masks.to(device)
                 logits = pl_module(images)
@@ -301,29 +305,32 @@ class ImageLoggingCallback(pl.Callback):
                     if present_classes in self.target_combinations and current_count < self.num_samples_per_combo:
                         self.combination_counts[present_classes] = current_count + 1
 
-
+                        # Prepare the image (reverse normalization to [0,255])
                         image_vis = (images[i].unsqueeze(0) * std + mean).clamp(0, 1)
                         image_vis_np = (image_vis.squeeze(0).permute(1, 2, 0).cpu().numpy() * 255).astype(np.uint8)
 
                         gt_mask_np = gt_mask.cpu().numpy().astype(np.uint8)
                         pred_mask_np = pred_masks[i].cpu().numpy().astype(np.uint8)
 
+                        # Create overlay images for ground truth and prediction
+                        gt_overlay = self._create_overlay(image_vis_np, gt_mask_np)
+                        pred_overlay = self._create_overlay(image_vis_np, pred_mask_np)
+                        
+                        # Concatenate overlays side by side
+                        combined_overlay = np.concatenate([gt_overlay, pred_overlay], axis=1)
+
                         filename = os.path.basename(img_paths[i])
                         class_names = [self.class_labels[c] for c in sorted(list(present_classes))]
-                        caption = f"Classes: {class_names}, Sample #{current_count + 1}"
+                        caption = f"Overlays - Ground Truth (left) | Prediction (right)\nClasses: {class_names}, Sample #{current_count + 1}"
 
                         wandb_image = wandb.Image(
-                            image_vis_np,
+                            combined_overlay,
                             caption=caption,
-                            masks={
-                                "ground_truth": {"mask_data": gt_mask_np, "class_labels": self.class_labels},
-                                "prediction": {"mask_data": pred_mask_np, "class_labels": self.class_labels},
-                            },
+                            file_type="jpg",
                         )
                         
                         # Log the image with its filename as the key
                         trainer.logger.experiment.log({f"Validation Samples/{filename}": wandb_image})
-    
 class CamVidModel(pl.LightningModule):
     def __init__(self, arch, encoder_name, in_channels, out_classes, lr, optimizer_type, scheduler_type, weight_decay, drop_path_rate, warmup_steps, t_max, eta_min, freeze_encoder, **kwargs):
         super().__init__()
@@ -463,6 +470,7 @@ def objective(trial: optuna.Trial):
     # -- 1. Define the hyperparameter search space ---
     # We use trial.suggest_ to define the range and type of each hyperparameter.
     
+    """
     # Categorical parameters
     encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0", "mit_b1", "mit_b2", "mit_b3", "mit_b4"])
     scheduler_type = trial.suggest_categorical("scheduler_type", ["CosineAnnealingLR", "OneCycleLR"])
@@ -475,7 +483,22 @@ def objective(trial: optuna.Trial):
     learning_rate = trial.suggest_float("lr", 1e-5, 1e-3, log=True)
     weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
     drop_path_rate = trial.suggest_float("drop_path_rate", 0.0, 0.3)
+    """
+    # Categorical parameters
+    encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0"])
+    scheduler_type = trial.suggest_categorical("scheduler_type", ["CosineAnnealingLR"])
+
+    # Integer parameters
+    batch_size = trial.suggest_categorical("batch_size", [16]) # Use categorical for specific values
+    warmup_steps = trial.suggest_int("warmup_steps", 0, 0)
+
+    # Float parameters
+    learning_rate = trial.suggest_float("lr", 1e-3, 1e-3, log=True)
+    weight_decay = trial.suggest_float("weight_decay", 1e-3, 1e-3, log=True)
+    drop_path_rate = trial.suggest_float("drop_path_rate", 0.1, 0.1)
     
+
+
     # --- 2. Setup Datasets and Dataloaders ---
     base_path = os.path.join('..', 'dataset_processed')
     images_path = os.path.join(base_path, 'images')
@@ -523,7 +546,7 @@ def objective(trial: optuna.Trial):
 
     # --- 4. Configure Callbacks and Logger ---
     # The Pruning Callback will monitor the validation dataset IoU and stop unpromising trials.
-    pruning_callback = PyTorchLightningPruningCallback(trial, monitor="valid_dataset_iou")
+    pruning_callback = PyTorchLightningPruningCallback(trial, monitor="valid_iou_overall")
     image_logging_callback = ImageLoggingCallback(num_samples_per_combo=1)  # Instantiate the callback
     wandb_logger = WandbLogger(project="tree-tornado", group="BOHB-SegFormer", job_type='train')
     
@@ -540,9 +563,9 @@ def objective(trial: optuna.Trial):
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
     
     # Return the value of the metric that should be maximized.
-    # The callback we defined above will report the 'valid_dataset_iou' to the trial.
+    # The callback we defined above will report the 'valid_iou_overall' to the trial.
     # We can access it via trial.user_attrs.
-    return trainer.callback_metrics["valid_dataset_iou"].item()
+    return trainer.callback_metrics["valid_iou_overall"].item()
 
 
 if __name__ == '__main__':
@@ -565,8 +588,8 @@ if __name__ == '__main__':
 
     # --- 2. Start the optimization ---
     # n_trials is the total number of hyperparameter combinations to test.
-    study.optimize(objective, n_trials=100, timeout=3600*6) # Run for 100 trials or 6 hours
-
+    # study.optimize(objective, n_trials=100, timeout=3600*6) # Run for 100 trials or 6 hours
+    study.optimize(objective, n_trials=1) # Run for 1 trial
     # --- 3. Print the results ---
     print("Number of finished trials: ", len(study.trials))
     print("Best trial:")
