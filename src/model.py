@@ -491,32 +491,41 @@ def objective(trial: optuna.Trial):
 
     if QUICK_TEST:
         # Categorical parameters
-        encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0"])
-        scheduler_type = trial.suggest_categorical("scheduler_type", ["CosineAnnealingLR"])
+        encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0", "mit_b2"])
+        scheduler_type = trial.suggest_categorical("scheduler_type", ["OneCycleLR", "CosineAnnealingLR"])
 
         # Integer parameters
-        batch_size = trial.suggest_categorical("batch_size", [16]) # Use categorical for specific values
+        batch_size = trial.suggest_categorical("batch_size", [4, 8, 16])  # Add 4 if OOM is possible
+        
+        if scheduler_type == 'OneCycleLR':
+            # Tune a hyperparameter named "max_lr" for the OneCycleLR scheduler
+            learning_rate = trial.suggest_float("max_lr", 1e-4, 1e-2, log=True)
+        else:
+            # Tune a hyperparameter named "lr" for other schedulers
+            learning_rate = trial.suggest_float("lr", 1e-5, 1e-3, log=True)
+        
+        weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-2, log=True)
+
+        # Optional: Only use if not handled internally by scheduler
         warmup_steps = trial.suggest_int("warmup_steps", 0, 0)
 
-        # Float parameters
-        learning_rate = trial.suggest_float("lr", 1e-3, 1e-3, log=True)
-        weight_decay = trial.suggest_float("weight_decay", 1e-3, 1e-3, log=True)
-        drop_path_rate = trial.suggest_float("drop_path_rate", 0.1, 0.1)
+        # Fixed for now: can tune later
+        drop_path_rate = trial.suggest_float("drop_path_rate", 0.1, 0.1, log=True)
 
     else:
             
         # Categorical parameters
-        encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0", "mit_b2", "mit_b4"])
+        encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0", "mit_b2"])
         scheduler_type = trial.suggest_categorical("scheduler_type", ["OneCycleLR"]) # CosineAnnealingLR maybe try
 
         # Integer parameters
-        batch_size = trial.suggest_categorical("batch_size", [8, 16]) # Try 4 if 8
-        warmup_steps = trial.suggest_int("warmup_steps", 0, 500)
+        batch_size = trial.suggest_categorical("batch_size", [8, 12, 16]) # Try 4 if 8
+        warmup_steps = trial.suggest_int("warmup_steps", 0, 0)
 
         # Float parameters
         learning_rate = trial.suggest_float("lr", 1e-5, 1e-3, log=True)
         weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
-        drop_path_rate = trial.suggest_float("drop_path_rate", 0.0, 0.3)
+        drop_path_rate = trial.suggest_float("drop_path_rate", 0.1, 0.1)
 
 
     # --- 2. Setup Datasets and Dataloaders ---
@@ -605,6 +614,7 @@ def objective(trial: optuna.Trial):
         accelerator="gpu",
         devices=1,
         num_sanity_val_steps=1,
+        precision='16-mixed'
     )
 
     if QUICK_TEST:
