@@ -619,7 +619,9 @@ def objective(trial: optuna.Trial):
 
     if QUICK_TEST:
         image_logging_callback.img_logging_interval = 2
-        trainer.num_sanity_val_steps = 0  # Disable sanity check for quick testing
+        trainer.num_sanity_val_steps = 0
+    else:
+        image_logging_callback.img_logging_interval = 10  # Disable sanity check for quick testing
     
     # --- 5. Run Training and Return the Metric to Optimize ---
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
