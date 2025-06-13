@@ -469,19 +469,7 @@ class CamVidModel(pl.LightningModule):
 def objective(trial: optuna.Trial):
     # -- 1. Define the hyperparameter search space ---
     # We use trial.suggest_ to define the range and type of each hyperparameter.
-    
-    # Categorical parameters
-    encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0", "mit_b1", "mit_b2", "mit_b3", "mit_b4", "mit_b5"])
-    scheduler_type = trial.suggest_categorical("scheduler_type", ["CosineAnnealingLR", "OneCycleLR"])
-
-    # Integer parameters
-    batch_size = trial.suggest_categorical("batch_size", [4, 8, 16]) # Use categorical for specific values
-    warmup_steps = trial.suggest_int("warmup_steps", 0, 500)
-
-    # Float parameters
-    learning_rate = trial.suggest_float("lr", 1e-5, 1e-3, log=True)
-    weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
-    drop_path_rate = trial.suggest_float("drop_path_rate", 0.0, 0.3)
+    encoder_name, scheduler_type, batch_size, warmup_steps, learning_rate, weight_decay, drop_path_rate = None, None, None, None, None, None, None
 
     if QUICK_TEST:
         # Categorical parameters
@@ -497,6 +485,21 @@ def objective(trial: optuna.Trial):
         weight_decay = trial.suggest_float("weight_decay", 1e-3, 1e-3, log=True)
         drop_path_rate = trial.suggest_float("drop_path_rate", 0.1, 0.1)
 
+    else:
+            
+        # Categorical parameters
+        encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0", "mit_b1", "mit_b2", "mit_b3", "mit_b4", "mit_b5"])
+        scheduler_type = trial.suggest_categorical("scheduler_type", ["CosineAnnealingLR", "OneCycleLR"])
+
+        # Integer parameters
+        batch_size = trial.suggest_categorical("batch_size", [4, 8, 16]) # Use categorical for specific values
+        warmup_steps = trial.suggest_int("warmup_steps", 0, 500)
+
+        # Float parameters
+        learning_rate = trial.suggest_float("lr", 1e-5, 1e-3, log=True)
+        weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
+        drop_path_rate = trial.suggest_float("drop_path_rate", 0.0, 0.3)
+
 
     # --- 2. Setup Datasets and Dataloaders ---
     base_path = os.path.join('..', DATASET_BASE_DIR)
@@ -508,7 +511,7 @@ def objective(trial: optuna.Trial):
     dataset_train = Dataset(
         image_root=images_path,
         mask_root=masks_path,
-        split_file=os.path.join(splits_path, TRAIN_SPLITS_FILENAME),
+        split_file=os.path.join(splits_path, train_splits_filename),
         transform=training_transform_obj
     )
 
@@ -516,7 +519,7 @@ def objective(trial: optuna.Trial):
     dataset_val = Dataset(
         image_root=images_path,
         mask_root=masks_path,
-        split_file=os.path.join(splits_path, VAL_SPLITS_FILENAME),
+        split_file=os.path.join(splits_path, val_splits_filename),
         transform=validation_transform_obj
     )
 
@@ -541,17 +544,33 @@ def objective(trial: optuna.Trial):
         eta_min=1e-6, 
         freeze_encoder=False 
     )
-
+    
     if QUICK_TEST:
         # For quick testing, we can freeze the encoder to speed up training
-        model.hparams.freeze_encoder = True
-        model.hparams.warmup_steps = 0
+        model = CamVidModel(
+        arch="SegFormer",
+        encoder_name=encoder_name,
+        in_channels=3,
+        out_classes=len(Cls),
+        lr=learning_rate,
+        optimizer_type=torch.optim.AdamW,
+        scheduler_type=scheduler_type,
+        weight_decay=weight_decay,
+        drop_path_rate=drop_path_rate,
+        warmup_steps=0,
+        t_max=T_MAX,
+        eta_min=1e-6, 
+        freeze_encoder=True,
+
+    )
+
 
     # --- 4. Configure Callbacks and Logger ---
     # The Pruning Callback will monitor the validation dataset IoU and stop unpromising trials.
     pruning_callback = PyTorchLightningPruningCallback(trial, monitor="valid_iou_overall")
     image_logging_callback = ImageLoggingCallback(num_samples_per_combo=1, img_logging_interval=5)  # Instantiate the callback
     wandb_logger = WandbLogger(project="tree-tornado", group="BOHB-SegFormer", job_type='train')
+
     
     checkpoint_callback = ModelCheckpoint(
         monitor="valid_iou_overall",
@@ -567,8 +586,12 @@ def objective(trial: optuna.Trial):
         callbacks=[RichProgressBar(), pruning_callback, image_logging_callback, checkpoint_callback],  # Added callback here
         accelerator="gpu",
         devices=1,
-        log_every_n_steps=25,
+        num_sanity_val_steps=1,
     )
+
+    if QUICK_TEST:
+        image_logging_callback.img_logging_interval = 2
+        trainer.num_sanity_val_steps = 0  # Disable sanity check for quick testing
     
     # --- 5. Run Training and Return the Metric to Optimize ---
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
@@ -600,7 +623,7 @@ if __name__ == '__main__':
     QUICK_TEST = True
 
     if QUICK_TEST:
-        epochs_max = 5
+        epochs_max = 4
         train_splits_filename = TRAIN_SPLITS_QUICK_FILENAME
         val_splits_filename = VAL_SPLITS_QUICK_FILENAME
 
@@ -650,7 +673,7 @@ if __name__ == '__main__':
     dataset_train = Dataset(
         image_root=os.path.join('..', DATASET_BASE_DIR, IMAGES_DIR),
         mask_root=os.path.join('..', DATASET_BASE_DIR, MASKS_DIR),
-        split_file=os.path.join('..', DATASET_BASE_DIR, SPLITS_DIR, train_splits_filename),
+        split_file=os.path.join('..', DATASET_BASE_DIR, SPLITS_DIR, val_splits_filename),
         transform=validation_transform_obj
     )
     test_loader = DataLoader(
@@ -665,7 +688,16 @@ if __name__ == '__main__':
     
     # Run prediction and save (we can reuse our helper function from Option 1)
     output_dir = "best_trial_outputs"
-    os.makedirs(os.path.join(output_dir, 'test'), exist_ok=True)
+
+    # Clear the output directory if it exists
+    if os.path.exists(output_dir):
+        for root, dirs, files in os.walk(output_dir, topdown=False):
+            for name in files:
+                os.remove(os.path.join(root, name))
+            for name in dirs:
+                os.rmdir(os.path.join(root, name))
+
+    os.makedirs(os.path.join(output_dir, 'val'), exist_ok=True)
     
     # This is essentially the logic from _save_outputs
     print("Saving outputs for the test set...")

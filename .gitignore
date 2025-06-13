@@ -3,6 +3,8 @@ src/model.ipynb
 src/lightning_logs/
 src/tree-tornado/ 
 src/checkpoints/
+src/best_trial_outputs/
+
 # Data
 data/
 dataset/
