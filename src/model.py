@@ -483,20 +483,19 @@ def objective(trial: optuna.Trial):
     weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
     drop_path_rate = trial.suggest_float("drop_path_rate", 0.0, 0.3)
 
-    """
-    # Categorical parameters
-    encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0"])
-    scheduler_type = trial.suggest_categorical("scheduler_type", ["CosineAnnealingLR"])
+    if QUICK_TEST:
+        # Categorical parameters
+        encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0"])
+        scheduler_type = trial.suggest_categorical("scheduler_type", ["CosineAnnealingLR"])
 
-    # Integer parameters
-    batch_size = trial.suggest_categorical("batch_size", [16]) # Use categorical for specific values
-    warmup_steps = trial.suggest_int("warmup_steps", 0, 0)
+        # Integer parameters
+        batch_size = trial.suggest_categorical("batch_size", [16]) # Use categorical for specific values
+        warmup_steps = trial.suggest_int("warmup_steps", 0, 0)
 
-    # Float parameters
-    learning_rate = trial.suggest_float("lr", 1e-3, 1e-3, log=True)
-    weight_decay = trial.suggest_float("weight_decay", 1e-3, 1e-3, log=True)
-    drop_path_rate = trial.suggest_float("drop_path_rate", 0.1, 0.1)
-    """
+        # Float parameters
+        learning_rate = trial.suggest_float("lr", 1e-3, 1e-3, log=True)
+        weight_decay = trial.suggest_float("weight_decay", 1e-3, 1e-3, log=True)
+        drop_path_rate = trial.suggest_float("drop_path_rate", 0.1, 0.1)
 
 
     # --- 2. Setup Datasets and Dataloaders ---
@@ -504,7 +503,7 @@ def objective(trial: optuna.Trial):
     images_path = os.path.join(base_path, IMAGES_DIR)
     masks_path = os.path.join(base_path, MASKS_DIR)
     splits_path = os.path.join(base_path, SPLITS_DIR)
-    """
+
     training_transform_obj, _ = get_training_augmentation()
     dataset_train = Dataset(
         image_root=images_path,
@@ -520,31 +519,12 @@ def objective(trial: optuna.Trial):
         split_file=os.path.join(splits_path, VAL_SPLITS_FILENAME),
         transform=validation_transform_obj
     )
-    """
-
-    ### Use subsample of data for quick tests
-    training_transform_obj, _ = get_training_augmentation()
-    dataset_train = Dataset(
-        image_root=images_path,
-        mask_root=masks_path,
-        split_file=os.path.join(splits_path, TRAIN_SPLITS_QUICK_FILENAME),
-        transform=training_transform_obj
-    )
-
-    validation_transform_obj, _ = get_validation_augmentation()
-    dataset_val = Dataset(
-        image_root=images_path,
-        mask_root=masks_path,
-        split_file=os.path.join(splits_path, VAL_SPLITS_QUICK_FILENAME),
-        transform=validation_transform_obj
-    )
-    ###
 
     train_loader = DataLoader(dataset_train, batch_size=batch_size, shuffle=True, num_workers=os.cpu_count() // 2, persistent_workers=True, pin_memory=True)
     val_loader = DataLoader(dataset_val, batch_size=batch_size, shuffle=False, num_workers=os.cpu_count() // 2, persistent_workers=True, pin_memory=True)
 
     # --- 3. Setup Model and Trainer ---
-    T_MAX = EPOCHS_MAX * math.ceil(len(dataset_train) / batch_size)
+    T_MAX = epochs_max * math.ceil(len(dataset_train) / batch_size)
     
     model = CamVidModel(
         arch="SegFormer",
@@ -562,6 +542,11 @@ def objective(trial: optuna.Trial):
         freeze_encoder=False 
     )
 
+    if QUICK_TEST:
+        # For quick testing, we can freeze the encoder to speed up training
+        model.hparams.freeze_encoder = True
+        model.hparams.warmup_steps = 0
+
     # --- 4. Configure Callbacks and Logger ---
     # The Pruning Callback will monitor the validation dataset IoU and stop unpromising trials.
     pruning_callback = PyTorchLightningPruningCallback(trial, monitor="valid_iou_overall")
@@ -577,7 +562,7 @@ def objective(trial: optuna.Trial):
     )
 
     trainer = pl.Trainer(
-        max_epochs=EPOCHS_MAX,
+        max_epochs=epochs_max,
         logger=wandb_logger,
         callbacks=[RichProgressBar(), pruning_callback, image_logging_callback, checkpoint_callback],  # Added callback here
         accelerator="gpu",
@@ -601,16 +586,23 @@ if __name__ == '__main__':
     torch.set_float32_matmul_precision('medium')
     pl.seed_everything(42)
 
-    EPOCHS_MAX = 55
+    epochs_max = 55
     DATASET_BASE_DIR = "dataset_processed"
     IMAGES_DIR = 'images'
     MASKS_DIR = 'masks'
     SPLITS_DIR = 'splits'
-    TRAIN_SPLITS_FILENAME = 'train.txt' 
+    train_splits_filename = 'train.txt' 
     TRAIN_SPLITS_QUICK_FILENAME = 'train_quick.txt' 
-    VAL_SPLITS_FILENAME = 'val.txt'
+    val_splits_filename = 'val.txt'
     VAL_SPLITS_QUICK_FILENAME = 'val_quick.txt'
     TEST_SPLITS_FILENAME = 'test.txt'
+
+    QUICK_TEST = True
+
+    if QUICK_TEST:
+        epochs_max = 5
+        train_splits_filename = TRAIN_SPLITS_QUICK_FILENAME
+        val_splits_filename = VAL_SPLITS_QUICK_FILENAME
 
     # --- 1. Create the Optuna Study ---
     # We use the BOHBSampler for efficient searching.
@@ -620,7 +612,7 @@ if __name__ == '__main__':
         direction="maximize", # We want to maximize the validation IoU
         sampler=optuna.samplers.TPESampler(multivariate=True),
         pruner=optuna.pruners.HyperbandPruner(
-            min_resource=1, max_resource=EPOCHS_MAX, reduction_factor=3
+            min_resource=1, max_resource=epochs_max, reduction_factor=3
         ),
     )
 
@@ -658,7 +650,7 @@ if __name__ == '__main__':
     dataset_train = Dataset(
         image_root=os.path.join('..', DATASET_BASE_DIR, IMAGES_DIR),
         mask_root=os.path.join('..', DATASET_BASE_DIR, MASKS_DIR),
-        split_file=os.path.join('..', DATASET_BASE_DIR, SPLITS_DIR, TRAIN_SPLITS_FILENAME),
+        split_file=os.path.join('..', DATASET_BASE_DIR, SPLITS_DIR, train_splits_filename),
         transform=validation_transform_obj
     )
     test_loader = DataLoader(
