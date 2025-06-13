@@ -25,6 +25,7 @@ import optuna
 from optuna.integration import PyTorchLightningPruningCallback
 from torchmetrics.classification import MulticlassJaccardIndex
 from lightning.pytorch.callbacks import ModelCheckpoint
+from torch.utils.data.sampler import SubsetRandomSampler
 
 class Cls(Enum):
     UPRIGHT = (0, "#b7f2a6")  # light green
@@ -294,22 +295,39 @@ class ImageLoggingCallback(pl.Callback):
         if trainer.current_epoch % self.img_logging_interval != 0:
             return
 
-        # Correctly select the validation dataloader
-        val_dataloaders = trainer.val_dataloaders
-        val_loader = val_dataloaders[0] if isinstance(val_dataloaders, list) else val_dataloaders
+        # 1. Get the original validation dataset
+        # Note: The exact way to get the dataset may vary. This is a common pattern.
+        try:
+            val_dataset = trainer.datamodule.val_dataloader().dataset
+        except AttributeError:
+            # Fallback if you don't use a DataModule or the structure is different
+            val_dataset = trainer.val_dataloaders[0].dataset
 
-        # Convert the dataloader to a list and shuffle it to randomize batch order for logging.
-        # This does NOT affect the main validation loop, only the image logging.
-        batches = list(val_loader)
-        random.shuffle(batches)
+        num_images_to_log = 20 # Total number of random images you want to log
+        
+        # 2. Get all indices from the dataset and shuffle them
+        dataset_indices = list(range(len(val_dataset)))
+        random.shuffle(dataset_indices)
+        
+        # 3. Select a small subset of indices
+        sample_indices = dataset_indices[:num_images_to_log]
+
+        # 4. Create a sampler and a new, temporary dataloader for these specific images
+        sample_sampler = SubsetRandomSampler(sample_indices)
+        
+        # Use a batch size that makes sense for logging
+        sample_loader = DataLoader(
+            dataset=val_dataset,
+            sampler=sample_sampler,
+            batch_size=5, 
+            num_workers=0 # Can be 0 for this small task
+        )
 
         device = pl_module.device
-        mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(1, 3, 1, 1)
-        std = torch.tensor([0.229, 0.224, 0.225], device=device).view(1, 3, 1, 1)
-
         pl_module.eval()
-        with torch.no_grad():            
-            for batch in val_loader:
+        with torch.no_grad():
+            # 5. Iterate through the small, fast, temporary loader
+            for batch in sample_loader:
                 if self._is_done():
                     break
 
@@ -469,7 +487,7 @@ def objective(trial: optuna.Trial):
 
     if QUICK_TEST:
         # Categorical parameters
-        encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0", "mit_b1"])
+        encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0"])
         scheduler_type = trial.suggest_categorical("scheduler_type", ["CosineAnnealingLR"])
 
         # Integer parameters
@@ -634,8 +652,7 @@ def save_predictions(model, dataloader, output_dir, mode, interval=8):
                     gt_mask=gt_masks[i], 
                     pred_mask=pred_masks[i]
                 )
-                # Replace extension with .jpg
-                original_filename = os.path.splitext(os.path.basename(img_paths[i]))[0] + ".jpg"
+                original_filename = os.path.basename(img_paths[i])
                 save_path = os.path.join(mode_output_path, original_filename)
                 Image.fromarray(vis_image_np).save(save_path)
                 
