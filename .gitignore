@@ -2,6 +2,7 @@ src/wandb/
 src/model.ipynb
 src/lightning_logs/
 src/tree-tornado/ 
+src/checkpoints/
 # Data
 data/
 dataset/
