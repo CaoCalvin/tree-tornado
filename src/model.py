@@ -489,13 +489,13 @@ def objective(trial: optuna.Trial):
     # We use trial.suggest_ to define the range and type of each hyperparameter.
     encoder_name, scheduler_type, batch_size, warmup_steps, learning_rate, weight_decay, drop_path_rate = None, None, None, None, None, None, None
 
-    if QUICK_TEST:
+    if not QUICK_TEST:
         # Categorical parameters
         encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0", "mit_b2"])
         scheduler_type = trial.suggest_categorical("scheduler_type", ["OneCycleLR", "CosineAnnealingLR"])
 
         # Integer parameters
-        batch_size = trial.suggest_categorical("batch_size", [4, 8, 16])  # Add 4 if OOM is possible
+        batch_size = trial.suggest_categorical("batch_size", [8, 16])  # Add 4 if OOM is possible
         
         if scheduler_type == 'OneCycleLR':
             # Tune a hyperparameter named "max_lr" for the OneCycleLR scheduler
@@ -515,16 +515,16 @@ def objective(trial: optuna.Trial):
     else:
             
         # Categorical parameters
-        encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0", "mit_b2"])
+        encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0"])
         scheduler_type = trial.suggest_categorical("scheduler_type", ["OneCycleLR"]) # CosineAnnealingLR maybe try
 
         # Integer parameters
-        batch_size = trial.suggest_categorical("batch_size", [8, 12, 16]) # Try 4 if 8
+        batch_size = trial.suggest_categorical("batch_size", [16]) # Try 4 if 8
         warmup_steps = trial.suggest_int("warmup_steps", 0, 0)
 
         # Float parameters
-        learning_rate = trial.suggest_float("lr", 1e-5, 1e-3, log=True)
-        weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-1, log=True)
+        learning_rate = trial.suggest_float("lr", 1e-4, 1e-4, log=True)
+        weight_decay = trial.suggest_float("weight_decay", 1e-3, 1e-3, log=True)
         drop_path_rate = trial.suggest_float("drop_path_rate", 0.1, 0.1)
 
 
