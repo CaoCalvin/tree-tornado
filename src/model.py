@@ -297,12 +297,17 @@ class ImageLoggingCallback(pl.Callback):
         val_dataloaders = trainer.val_dataloaders
         val_loader = val_dataloaders[0] if isinstance(val_dataloaders, list) else val_dataloaders
 
+        # Convert the dataloader to a list and shuffle it to randomize batch order for logging.
+        # This does NOT affect the main validation loop, only the image logging.
+        batches = list(val_loader)
+        random.shuffle(batches)
+
         device = pl_module.device
         mean = torch.tensor([0.485, 0.456, 0.406], device=device).view(1, 3, 1, 1)
         std = torch.tensor([0.229, 0.224, 0.225], device=device).view(1, 3, 1, 1)
 
         pl_module.eval()
-        with torch.no_grad():
+        with torch.no_grad():            
             for batch in val_loader:
                 if self._is_done():
                     break

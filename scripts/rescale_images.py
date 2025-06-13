@@ -33,7 +33,7 @@ def rescale_all_tifs(folder_path: str, scale: float) -> None:
                 rescale_image(full_path, scale)
 
 if __name__ == "__main__":
-    folder = r"C:\Users\kevin\dev\tree-tornado\dataset\urquhartlake"
+    folder = r"C:\Users\kevin\dev\tree-tornado\dataset\sunbeamlake"
     try:
         scale_factor = 0.5
     except ValueError:
