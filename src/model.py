@@ -680,8 +680,10 @@ if __name__ == '__main__':
     TRAIN_MODE = 'train'
     VAL_MODE = 'val'
 
+    MAX_TRIALS = 1
+    MAX_TIME = 3600 * 65  # 65 hours in seconds
 
-    QUICK_TEST = True
+    QUICK_TEST = False
 
     if QUICK_TEST:
         epochs_max = 4
@@ -703,7 +705,7 @@ if __name__ == '__main__':
     # --- 2. Start the optimization ---
     # n_trials is the total number of hyperparameter combinations to test.
     # study.optimize(objective, n_trials=100, timeout=3600*6) # Run for 100 trials or 6 hours
-    study.optimize(objective, n_trials=1) # Run for 1 trial
+    study.optimize(objective, n_trials=MAX_TRIALS, timeout=MAX_TIME) # Run for 1 trial
 
     # --- 3. Print the results ---
     print("Number of finished trials: ", len(study.trials))
