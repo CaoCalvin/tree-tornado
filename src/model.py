@@ -25,7 +25,20 @@ import optuna
 from optuna.integration import PyTorchLightningPruningCallback
 from torchmetrics.classification import MulticlassJaccardIndex
 from lightning.pytorch.callbacks import ModelCheckpoint
-from torch.utils.data.sampler import SubsetRandomSampler
+from torch.utils.data import Sampler
+import random
+
+class EpochShuffleSampler(Sampler):
+    def __init__(self, indices):
+        self.indices = list(indices)
+
+    def __iter__(self):
+        shuffled = self.indices[:]
+        random.shuffle(shuffled)
+        return iter(shuffled)
+
+    def __len__(self):
+        return len(self.indices)
 
 class Cls(Enum):
     UPRIGHT = (0, "#b7f2a6")  # light green
@@ -305,7 +318,7 @@ class ImageLoggingCallback(pl.Callback):
         sample_indices = dataset_indices[:num_images_to_log]
 
         # 4. Create a sampler and a new, temporary dataloader.
-        sample_sampler = SubsetRandomSampler(sample_indices)
+        sample_sampler = EpochShuffleSampler(sample_indices)
         
         sample_loader = DataLoader(
             dataset=val_dataset,  
