@@ -24,6 +24,7 @@ import os
 import optuna
 from optuna.integration import PyTorchLightningPruningCallback
 from torchmetrics.classification import MulticlassJaccardIndex
+from lightning.pytorch.callbacks import ModelCheckpoint
 
 class Cls(Enum):
     UPRIGHT = (0, "#b7f2a6")  # light green
@@ -43,7 +44,7 @@ def resplit(dataset_path, train_frac=0.7, val_frac=0.15, test_frac=0.15):
     """Splits scene folders into train, validation, and test sets."""
     assert math.isclose(train_frac + val_frac + test_frac, 1.0), "Fractions must sum to 1."
     
-    images_path = os.path.join(dataset_path, 'images')
+    images_path = os.path.join(dataset_path, IMAGES_DIR)
     assert os.path.exists(images_path), f"Dataset images path does not exist: {images_path}"
     
     scenes = sorted(os.listdir(images_path))
@@ -60,9 +61,9 @@ def resplit(dataset_path, train_frac=0.7, val_frac=0.15, test_frac=0.15):
     test_scenes = scenes[n_train + n_val:] # Assign the rest to test set
 
 
-    os.makedirs(os.path.join(dataset_path, 'splits'), exist_ok=True)
+    os.makedirs(os.path.join(dataset_path, SPLITS_DIR), exist_ok=True)
     for name, split in zip(['train', 'val', 'test'], [train_scenes, val_scenes, test_scenes]):
-        with open(os.path.join(dataset_path, 'splits', f'{name}.txt'), 'w') as f:
+        with open(os.path.join(dataset_path, SPLITS_DIR, f'{name}.txt'), 'w') as f:
             for scene in split:
                 f.write(f"{scene}\n")
 
@@ -434,57 +435,34 @@ class CamVidModel(pl.LightningModule):
 
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.hparams.lr, weight_decay=self.hparams.weight_decay)
 
-
-
         if self.hparams.scheduler_type == 'CosineAnnealingLR':
-
             scheduler = lr_scheduler.CosineAnnealingLR(optimizer, T_max=self.hparams.t_max, eta_min=self.hparams.eta_min)
 
         elif self.hparams.scheduler_type == 'OneCycleLR':
-
             scheduler = lr_scheduler.OneCycleLR(optimizer, max_lr=self.hparams.lr, total_steps=self.hparams.t_max)
 
         else:
-
             raise ValueError("Unsupported scheduler type")
 
-
-
         # Optional: Add a learning rate warmup scheduler
-
         if self.hparams.warmup_steps > 0:
-
             warmup_scheduler = torch.optim.lr_scheduler.LinearLR(
-
                 optimizer, start_factor=1e-6, end_factor=1.0, total_iters=self.hparams.warmup_steps
-
             )
 
             # Chain the warmup scheduler with the main scheduler
-
             lr_scheduler_config = {
-
                 "scheduler": torch.optim.lr_scheduler.SequentialLR(optimizer, schedulers=[warmup_scheduler, scheduler], milestones=[self.hparams.warmup_steps]),
-
                 "interval": "step",
-
                 "frequency": 1,
-
             }
 
         else:
-
             lr_scheduler_config = {
-
                 "scheduler": scheduler,
-
                 "interval": "step",
-
                 "frequency": 1,
-
             }
-
-
 
         return {"optimizer": optimizer, "lr_scheduler": lr_scheduler_config}
  
@@ -522,16 +500,16 @@ def objective(trial: optuna.Trial):
 
 
     # --- 2. Setup Datasets and Dataloaders ---
-    base_path = os.path.join('..', 'dataset_processed')
-    images_path = os.path.join(base_path, 'images')
-    masks_path = os.path.join(base_path, 'masks')
-    splits_path = os.path.join(base_path, 'splits')
-    
+    base_path = os.path.join('..', DATASET_BASE_DIR)
+    images_path = os.path.join(base_path, IMAGES_DIR)
+    masks_path = os.path.join(base_path, MASKS_DIR)
+    splits_path = os.path.join(base_path, SPLITS_DIR)
+    """
     training_transform_obj, _ = get_training_augmentation()
     dataset_train = Dataset(
         image_root=images_path,
         mask_root=masks_path,
-        split_file=os.path.join(splits_path, 'train.txt'),
+        split_file=os.path.join(splits_path, TRAIN_SPLITS_FILENAME),
         transform=training_transform_obj
     )
 
@@ -539,9 +517,28 @@ def objective(trial: optuna.Trial):
     dataset_val = Dataset(
         image_root=images_path,
         mask_root=masks_path,
-        split_file=os.path.join(splits_path, 'val.txt'),
+        split_file=os.path.join(splits_path, VAL_SPLITS_FILENAME),
         transform=validation_transform_obj
     )
+    """
+
+    ### Use subsample of data for quick tests
+    training_transform_obj, _ = get_training_augmentation()
+    dataset_train = Dataset(
+        image_root=images_path,
+        mask_root=masks_path,
+        split_file=os.path.join(splits_path, TRAIN_SPLITS_QUICK_FILENAME),
+        transform=training_transform_obj
+    )
+
+    validation_transform_obj, _ = get_validation_augmentation()
+    dataset_val = Dataset(
+        image_root=images_path,
+        mask_root=masks_path,
+        split_file=os.path.join(splits_path, VAL_SPLITS_QUICK_FILENAME),
+        transform=validation_transform_obj
+    )
+    ###
 
     train_loader = DataLoader(dataset_train, batch_size=batch_size, shuffle=True, num_workers=os.cpu_count() // 2, persistent_workers=True, pin_memory=True)
     val_loader = DataLoader(dataset_val, batch_size=batch_size, shuffle=False, num_workers=os.cpu_count() // 2, persistent_workers=True, pin_memory=True)
@@ -555,26 +552,34 @@ def objective(trial: optuna.Trial):
         in_channels=3,
         out_classes=len(Cls),
         lr=learning_rate,
-        optimizer_type=torch.optim.AdamW, # Using AdamW
+        optimizer_type=torch.optim.AdamW,
         scheduler_type=scheduler_type,
         weight_decay=weight_decay,
         drop_path_rate=drop_path_rate,
         warmup_steps=warmup_steps,
         t_max=T_MAX,
-        eta_min=1e-6, # A small minimum learning rate
-        freeze_encoder=False # Usually better to finetune the encoder
+        eta_min=1e-6, 
+        freeze_encoder=False 
     )
 
     # --- 4. Configure Callbacks and Logger ---
     # The Pruning Callback will monitor the validation dataset IoU and stop unpromising trials.
     pruning_callback = PyTorchLightningPruningCallback(trial, monitor="valid_iou_overall")
-    image_logging_callback = ImageLoggingCallback(num_samples_per_combo=1, img_logging_interval=1)  # Instantiate the callback
+    image_logging_callback = ImageLoggingCallback(num_samples_per_combo=1, img_logging_interval=5)  # Instantiate the callback
     wandb_logger = WandbLogger(project="tree-tornado", group="BOHB-SegFormer", job_type='train')
     
+    checkpoint_callback = ModelCheckpoint(
+        monitor="valid_iou_overall",
+        mode="max",
+        save_top_k=1,
+        dirpath=f"checkpoints/trial_{trial.number}", # Save to a trial-specific directory
+        filename="best-model-{epoch}-{valid_iou_overall:.4f}"
+    )
+
     trainer = pl.Trainer(
         max_epochs=EPOCHS_MAX,
         logger=wandb_logger,
-        callbacks=[RichProgressBar(), pruning_callback, image_logging_callback],  # Added callback here
+        callbacks=[RichProgressBar(), pruning_callback, image_logging_callback, checkpoint_callback],  # Added callback here
         accelerator="gpu",
         devices=1,
         log_every_n_steps=25,
@@ -582,6 +587,8 @@ def objective(trial: optuna.Trial):
     
     # --- 5. Run Training and Return the Metric to Optimize ---
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+
+    trial.set_user_attr("best_checkpoint", checkpoint_callback.best_model_path)
     
     # Return the value of the metric that should be maximized.
     # The callback we defined above will report the 'valid_iou_overall' to the trial.
@@ -591,13 +598,20 @@ def objective(trial: optuna.Trial):
 
 if __name__ == '__main__':
     # print(pl.__version__)
-    os.environ["WANDB_MODE"] = "online"
-
     torch.set_float32_matmul_precision('medium')
     pl.seed_everything(42)
 
     EPOCHS_MAX = 55
-    
+    DATASET_BASE_DIR = "dataset_processed"
+    IMAGES_DIR = 'images'
+    MASKS_DIR = 'masks'
+    SPLITS_DIR = 'splits'
+    TRAIN_SPLITS_FILENAME = 'train.txt' 
+    TRAIN_SPLITS_QUICK_FILENAME = 'train_quick.txt' 
+    VAL_SPLITS_FILENAME = 'val.txt'
+    VAL_SPLITS_QUICK_FILENAME = 'val_quick.txt'
+    TEST_SPLITS_FILENAME = 'test.txt'
+
     # --- 1. Create the Optuna Study ---
     # We use the BOHBSampler for efficient searching.
     # The HyperbandPruner is used to stop unpromising trials early.
@@ -622,3 +636,58 @@ if __name__ == '__main__':
     print("  Params: ")
     for key, value in best_trial.params.items():
         print(f"    {key}: {value}")
+
+    # --- 4. Analyze the Best Trial and Save its Outputs ---
+    print("\nHyperparameter search complete. Now generating outputs for the best trial.")
+
+    best_trial = study.best_trial
+    print(f"Best trial number: {best_trial.number}")
+    print(f"Best trial validation IoU: {best_trial.value:.4f}")
+    print("Best trial hyperparameters: ", best_trial.params)
+
+    ###
+
+    best_checkpoint_path = best_trial.user_attrs["best_checkpoint"]
+    print(f"Loading best model from: {best_checkpoint_path}")
+
+    # Load the best model
+    best_model = CamVidModel.load_from_checkpoint(best_checkpoint_path)
+
+    # Create the test dataloader (you'll need the params from the best trial)
+    validation_transform_obj, _ = get_validation_augmentation()
+    dataset_train = Dataset(
+        image_root=os.path.join('..', DATASET_BASE_DIR, IMAGES_DIR),
+        mask_root=os.path.join('..', DATASET_BASE_DIR, MASKS_DIR),
+        split_file=os.path.join('..', DATASET_BASE_DIR, SPLITS_DIR, TRAIN_SPLITS_FILENAME),
+        transform=validation_transform_obj
+    )
+    test_loader = DataLoader(
+        dataset_train, 
+        batch_size=best_trial.params['batch_size'], # Use batch size from the best trial
+        shuffle=False, 
+        num_workers=os.cpu_count() // 2
+    )
+
+    # Manually create a trainer to run prediction
+    predictor_trainer = pl.Trainer(accelerator="gpu", devices=1)
+    
+    # Run prediction and save (we can reuse our helper function from Option 1)
+    output_dir = "best_trial_outputs"
+    os.makedirs(os.path.join(output_dir, 'test'), exist_ok=True)
+    
+    # This is essentially the logic from _save_outputs
+    print("Saving outputs for the test set...")
+    best_model.eval()
+    device = best_model.device
+    with torch.no_grad():
+        for batch in test_loader:
+            images, gt_masks, img_paths = batch
+            images, gt_masks = images.to(device), gt_masks.to(device)
+            logits = best_model(images)
+            pred_masks = torch.argmax(logits, dim=1)
+            for i in range(len(images)):
+                vis_image_np = visualize(image=images[i], gt_mask=gt_masks[i], pred_mask=pred_masks[i])
+                original_filename = os.path.basename(img_paths[i])
+                save_path = os.path.join(output_dir, 'test', original_filename)
+                Image.fromarray(vis_image_np).save(save_path)
+    print("Done.")
