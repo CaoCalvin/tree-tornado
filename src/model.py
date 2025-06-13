@@ -288,36 +288,30 @@ class ImageLoggingCallback(pl.Callback):
             self.combination_counts = {}
 
     def on_validation_epoch_end(self, trainer, pl_module):
-        # Skip during sanity check
-        if trainer.sanity_checking:
+        if trainer.sanity_checking or (trainer.current_epoch % self.img_logging_interval != 0):
             return
 
-        if trainer.current_epoch % self.img_logging_interval != 0:
-            return
+        # 1. Get the validation dataloader and then its underlying dataset.
+        val_dataloader = trainer.val_dataloaders[0] if isinstance(trainer.val_dataloaders, list) else trainer.val_dataloaders
+        val_dataset = val_dataloader.dataset  # <-- THE KEY FIX
 
-        # 1. Get the original validation dataset
-        # Note: The exact way to get the dataset may vary. This is a common pattern.
-        val_dataloaders = trainer.val_dataloaders
-        val_dataset = val_dataloaders[0] if isinstance(val_dataloaders, list) else val_dataloaders
+        num_images_to_log = 20
 
-        num_images_to_log = 20 # Total number of random images you want to log
-        
-        # 2. Get all indices from the dataset and shuffle them
-        dataset_indices = list(range(len(val_dataset)))
+        # 2. Get all indices from the actual dataset object.
+        dataset_indices = list(range(len(val_dataset))) # <-- Now this is correct.
         random.shuffle(dataset_indices)
-        
-        # 3. Select a small subset of indices
+
+        # 3. Select a small subset of indices.
         sample_indices = dataset_indices[:num_images_to_log]
 
-        # 4. Create a sampler and a new, temporary dataloader for these specific images
+        # 4. Create a sampler and a new, temporary dataloader.
         sample_sampler = SubsetRandomSampler(sample_indices)
         
-        # Use a batch size that makes sense for logging
         sample_loader = DataLoader(
-            dataset=val_dataset,
+            dataset=val_dataset,  
             sampler=sample_sampler,
-            batch_size=5, 
-            num_workers=0 # Can be 0 for this small task
+            batch_size=5,
+            num_workers=0
         )
 
         device = pl_module.device
@@ -334,7 +328,7 @@ class ImageLoggingCallback(pl.Callback):
                 logits = pl_module(images)
                 pred_masks = torch.argmax(logits, dim=1)
 
-                for i in images.shape[0]:
+                for i in range(images.shape[0]):
                     gt_mask = gt_masks[i]
                     present_classes = frozenset(torch.unique(gt_mask).cpu().numpy())
                     current_count = self.combination_counts.get(present_classes, 0)
