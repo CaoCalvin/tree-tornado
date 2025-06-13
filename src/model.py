@@ -603,6 +603,46 @@ def objective(trial: optuna.Trial):
     # We can access it via trial.user_attrs.
     return trainer.callback_metrics["valid_iou_overall"].item()
 
+def save_predictions(model, dataloader, output_dir, mode, interval=8):
+    """
+    Saves model prediction visualizations for a given dataloader and mode.
+
+    Args:
+        model (pl.LightningModule): The trained model to use for predictions.
+        dataloader (torch.utils.data.DataLoader): The dataloader for the dataset.
+        output_dir (str): The base directory to save the outputs.
+        mode (str): The dataset mode, e.g., 'train' or 'val'. This is used to
+                    create a subdirectory.
+    """
+    print(f"Generating and saving predictions for the '{mode}' set...")
+    
+    # Define and create the specific output path for the current mode
+    mode_output_path = os.path.join(output_dir, mode)
+    os.makedirs(mode_output_path, exist_ok=True)
+    
+    device = model.device
+    model.eval()
+    with torch.no_grad():
+        for batch in dataloader:
+            images, gt_masks, img_paths = batch
+            images, gt_masks = images.to(device), gt_masks.to(device)
+            
+            # Get model predictions
+            logits = model(images)
+            pred_masks = torch.argmax(logits, dim=1)
+            
+            # Visualize and save each image in the batch
+            for i in range(0, len(images), interval):
+                vis_image_np = visualize(
+                    image=images[i], 
+                    gt_mask=gt_masks[i], 
+                    pred_mask=pred_masks[i]
+                )
+                original_filename = os.path.basename(img_paths[i])
+                save_path = os.path.join(mode_output_path, original_filename)
+                Image.fromarray(vis_image_np).save(save_path)
+                
+    print(f"Completed saving predictions for the '{mode}' set.")
 
 if __name__ == '__main__':
     # print(pl.__version__)
@@ -619,6 +659,9 @@ if __name__ == '__main__':
     val_splits_filename = 'val.txt'
     VAL_SPLITS_QUICK_FILENAME = 'val_quick.txt'
     TEST_SPLITS_FILENAME = 'test.txt'
+    TRAIN_MODE = 'train'
+    VAL_MODE = 'val'
+
 
     QUICK_TEST = True
 
@@ -643,6 +686,7 @@ if __name__ == '__main__':
     # n_trials is the total number of hyperparameter combinations to test.
     # study.optimize(objective, n_trials=100, timeout=3600*6) # Run for 100 trials or 6 hours
     study.optimize(objective, n_trials=1) # Run for 1 trial
+
     # --- 3. Print the results ---
     print("Number of finished trials: ", len(study.trials))
     print("Best trial:")
@@ -660,58 +704,58 @@ if __name__ == '__main__':
     print(f"Best trial validation IoU: {best_trial.value:.4f}")
     print("Best trial hyperparameters: ", best_trial.params)
 
-    ###
-
+    # Load the best model from the checkpoint saved during training
     best_checkpoint_path = best_trial.user_attrs["best_checkpoint"]
     print(f"Loading best model from: {best_checkpoint_path}")
-
-    # Load the best model
     best_model = CamVidModel.load_from_checkpoint(best_checkpoint_path)
 
-    # Create the test dataloader (you'll need the params from the best trial)
+    # Use validation augmentations for consistent visualization across both sets
     validation_transform_obj, _ = get_validation_augmentation()
-    dataset_train = Dataset(
+    
+    # Create a dataloader for the TRAINING set of the best trial
+    dataset_train_best = Dataset(
+        image_root=os.path.join('..', DATASET_BASE_DIR, IMAGES_DIR),
+        mask_root=os.path.join('..', DATASET_BASE_DIR, MASKS_DIR),
+        split_file=os.path.join('..', DATASET_BASE_DIR, SPLITS_DIR, train_splits_filename),
+        transform=validation_transform_obj
+    )
+    train_loader_best = DataLoader(
+        dataset_train_best,
+        batch_size=best_trial.params['batch_size'],
+        shuffle=False,
+        num_workers=os.cpu_count() // 2
+    )
+
+    # Create a dataloader for the VALIDATION set of the best trial
+    dataset_val_best = Dataset(
         image_root=os.path.join('..', DATASET_BASE_DIR, IMAGES_DIR),
         mask_root=os.path.join('..', DATASET_BASE_DIR, MASKS_DIR),
         split_file=os.path.join('..', DATASET_BASE_DIR, SPLITS_DIR, val_splits_filename),
         transform=validation_transform_obj
     )
-    test_loader = DataLoader(
-        dataset_train, 
-        batch_size=best_trial.params['batch_size'], # Use batch size from the best trial
-        shuffle=False, 
+    val_loader_best = DataLoader(
+        dataset_val_best,
+        batch_size=best_trial.params['batch_size'],
+        shuffle=False,
         num_workers=os.cpu_count() // 2
     )
-
-    # Manually create a trainer to run prediction
-    predictor_trainer = pl.Trainer(accelerator="gpu", devices=1)
     
-    # Run prediction and save (we can reuse our helper function from Option 1)
+    # Define the main output directory
     output_dir = "best_trial_outputs"
 
-    # Clear the output directory if it exists
+    interval = 8
+
+    # Clean up the output directory if it already exists
     if os.path.exists(output_dir):
+        # Your original cleanup logic
         for root, dirs, files in os.walk(output_dir, topdown=False):
             for name in files:
                 os.remove(os.path.join(root, name))
             for name in dirs:
                 os.rmdir(os.path.join(root, name))
 
-    os.makedirs(os.path.join(output_dir, 'val'), exist_ok=True)
+    # Use the helper function to save predictions for both datasets
+    save_predictions(best_model, train_loader_best, output_dir, TRAIN_MODE, interval)
+    save_predictions(best_model, val_loader_best, output_dir, VAL_MODE, interval)
     
-    # This is essentially the logic from _save_outputs
-    print("Saving outputs for the test set...")
-    best_model.eval()
-    device = best_model.device
-    with torch.no_grad():
-        for batch in test_loader:
-            images, gt_masks, img_paths = batch
-            images, gt_masks = images.to(device), gt_masks.to(device)
-            logits = best_model(images)
-            pred_masks = torch.argmax(logits, dim=1)
-            for i in range(len(images)):
-                vis_image_np = visualize(image=images[i], gt_mask=gt_masks[i], pred_mask=pred_masks[i])
-                original_filename = os.path.basename(img_paths[i])
-                save_path = os.path.join(output_dir, 'test', original_filename)
-                Image.fromarray(vis_image_np).save(save_path)
-    print("Done.")
+    print("\nAll predictions saved.")
