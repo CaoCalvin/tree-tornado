@@ -602,47 +602,48 @@ def objective(trial: optuna.Trial):
     # The callback we defined above will report the 'valid_iou_overall' to the trial.
     # We can access it via trial.user_attrs.
     return trainer.callback_metrics["valid_iou_overall"].item()
-
-def save_predictions(model, dataloader, output_dir, mode, interval=8):
-    """
-    Saves model prediction visualizations for a given dataloader and mode.
-
-    Args:
-        model (pl.LightningModule): The trained model to use for predictions.
-        dataloader (torch.utils.data.DataLoader): The dataloader for the dataset.
-        output_dir (str): The base directory to save the outputs.
-        mode (str): The dataset mode, e.g., 'train' or 'val'. This is used to
-                    create a subdirectory.
-    """
-    print(f"Generating and saving predictions for the '{mode}' set...")
     
-    # Define and create the specific output path for the current mode
-    mode_output_path = os.path.join(output_dir, mode)
-    os.makedirs(mode_output_path, exist_ok=True)
-    
-    device = model.device
-    model.eval()
-    with torch.no_grad():
-        for batch in dataloader:
-            images, gt_masks, img_paths = batch
-            images, gt_masks = images.to(device), gt_masks.to(device)
-            
-            # Get model predictions
-            logits = model(images)
-            pred_masks = torch.argmax(logits, dim=1)
-            
-            # Visualize and save each image in the batch
-            for i in range(0, len(images), interval):
-                vis_image_np = visualize(
-                    image=images[i], 
-                    gt_mask=gt_masks[i], 
-                    pred_mask=pred_masks[i]
-                )
-                original_filename = os.path.basename(img_paths[i])
-                save_path = os.path.join(mode_output_path, original_filename)
-                Image.fromarray(vis_image_np).save(save_path)
+    def save_predictions(model, dataloader, output_dir, mode, interval=8):
+        """
+        Saves model prediction visualizations for a given dataloader and mode.
+
+        Args:
+            model (pl.LightningModule): The trained model to use for predictions.
+            dataloader (torch.utils.data.DataLoader): The dataloader for the dataset.
+            output_dir (str): The base directory to save the outputs.
+            mode (str): The dataset mode, e.g., 'train' or 'val'. This is used to
+                        create a subdirectory.
+        """
+        print(f"Generating and saving predictions for the '{mode}' set...")
+        
+        # Define and create the specific output path for the current mode
+        mode_output_path = os.path.join(output_dir, mode)
+        os.makedirs(mode_output_path, exist_ok=True)
+        
+        device = model.device
+        model.eval()
+        with torch.no_grad():
+            for batch in dataloader:
+                images, gt_masks, img_paths = batch
+                images, gt_masks = images.to(device), gt_masks.to(device)
                 
-    print(f"Completed saving predictions for the '{mode}' set.")
+                # Get model predictions
+                logits = model(images)
+                pred_masks = torch.argmax(logits, dim=1)
+                
+                # Visualize and save each image in the batch
+                for i in range(0, len(images), interval):
+                    vis_image_np = visualize(
+                        image=images[i], 
+                        gt_mask=gt_masks[i], 
+                        pred_mask=pred_masks[i]
+                    )
+                    # Replace extension with .jpg
+                    original_filename = os.path.splitext(os.path.basename(img_paths[i]))[0] + ".jpg"
+                    save_path = os.path.join(mode_output_path, original_filename)
+                    Image.fromarray(vis_image_np).save(save_path)
+                    
+        print(f"Completed saving predictions for the '{mode}' set.")
 
 if __name__ == '__main__':
     # print(pl.__version__)
