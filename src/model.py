@@ -506,11 +506,11 @@ def objective(trial: optuna.Trial):
     else:
             
         # Categorical parameters
-        encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0", "mit_b1", "mit_b2", "mit_b3", "mit_b4", "mit_b5"])
-        scheduler_type = trial.suggest_categorical("scheduler_type", ["CosineAnnealingLR", "OneCycleLR"])
+        encoder_name = trial.suggest_categorical("encoder_name", ["mit_b0", "mit_b2", "mit_b4"])
+        scheduler_type = trial.suggest_categorical("scheduler_type", ["OneCycleLR"]) # CosineAnnealingLR maybe try
 
         # Integer parameters
-        batch_size = trial.suggest_categorical("batch_size", [4, 8, 16]) # Use categorical for specific values
+        batch_size = trial.suggest_categorical("batch_size", [8, 16]) # Try 4 if 8
         warmup_steps = trial.suggest_int("warmup_steps", 0, 500)
 
         # Float parameters
