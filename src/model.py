@@ -297,11 +297,8 @@ class ImageLoggingCallback(pl.Callback):
 
         # 1. Get the original validation dataset
         # Note: The exact way to get the dataset may vary. This is a common pattern.
-        try:
-            val_dataset = trainer.datamodule.val_dataloader().dataset
-        except AttributeError:
-            # Fallback if you don't use a DataModule or the structure is different
-            val_dataset = trainer.val_dataloaders[0].dataset
+        val_dataloaders = trainer.val_dataloaders
+        val_dataset = val_dataloaders[0] if isinstance(val_dataloaders, list) else val_dataloaders
 
         num_images_to_log = 20 # Total number of random images you want to log
         
