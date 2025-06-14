@@ -1,18 +1,17 @@
-[W 2025-06-13 13:19:17,721] Trial 0 failed with value None.
+Trainable params: 24.7 M
+Non-trainable params: 0
+Total params: 24.7 M
+Total estimated model params size (MB): 98
+Modules in train mode: 347
+Modules in eval mode: 0
+Epoch 10/79 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1660/1660 0:06:03 • 0:00:00 4.61it/s v_num: o8lc train_loss_step: 0.088 valid_loss_step: 0.004 valid_loss_epoch: 0.351 valid_iou_overall: 0.707 
+                                                                                          valid_iou_class_UPRIGHT: 0.764 valid_iou_class_FALLEN: 0.622 valid_iou_class_OTHER: 0.736 train_loss_epoch:                                                                                          0.229 train_iou_overall: 0.710 train_iou_class_UPRIGHT: 0.767 train_iou_class_FALLEN: 0.625
+                                                                                          train_iou_class_OTHER: 0.739
+[W 2025-06-14 18:01:37,714] Trial 0 failed with parameters: {'encoder_name': 'mit_b2', 'scheduler_type': 'OneCycleLR', 'batch_size': 8, 'max_lr': 0.00250428237343386, 'weight_decay': 0.00026231229514170844, 'warmup_steps': 0, 'drop_path_rate': 0.1} because of the following error: FileNotFoundError(2, 'No such file or directory').
 Traceback (most recent call last):
-  File "Z:\tree-tornado\src\model.py", line 699, in <module>
-    study.optimize(objective, n_trials=1) # Run for 1 trial
-  File "Z:\Miniconda\envs\ml-env\lib\site-packages\optuna\study\study.py", line 475, in optimize
-    _optimize(
-  File "Z:\Miniconda\envs\ml-env\lib\site-packages\optuna\study\_optimize.py", line 63, in _optimize
-    _optimize_sequential(
-  File "Z:\Miniconda\envs\ml-env\lib\site-packages\optuna\study\_optimize.py", line 160, in _optimize_sequential
-    frozen_trial = _run_trial(study, func, catch)
-  File "Z:\Miniconda\envs\ml-env\lib\site-packages\optuna\study\_optimize.py", line 248, in _run_trial
-    raise func_err
   File "Z:\Miniconda\envs\ml-env\lib\site-packages\optuna\study\_optimize.py", line 197, in _run_trial
     value_or_values = func(trial)
-  File "Z:\tree-tornado\src\model.py", line 608, in objective
+  File "Z:\tree-tornado\src\model.py", line 627, in objective
     trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
   File "Z:\Miniconda\envs\ml-env\lib\site-packages\lightning\pytorch\trainer\trainer.py", line 561, in fit
     call._call_and_handle_interrupt(
@@ -42,14 +41,65 @@ Traceback (most recent call last):
     call._call_callback_hooks(trainer, hook_name)
   File "Z:\Miniconda\envs\ml-env\lib\site-packages\lightning\pytorch\trainer\call.py", line 227, in _call_callback_hooks
     fn(trainer, trainer.lightning_module, *args, **kwargs)
-  File "Z:\tree-tornado\src\model.py", line 327, in on_validation_epoch_end
-    for batch in sample_loader:
-  File "Z:\Miniconda\envs\ml-env\lib\site-packages\torch\utils\data\dataloader.py", line 701, in __next__
-    data = self._next_data()
-  File "Z:\Miniconda\envs\ml-env\lib\site-packages\torch\utils\data\dataloader.py", line 757, in _next_data
-    data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
-  File "Z:\Miniconda\envs\ml-env\lib\site-packages\torch\utils\data\_utils\fetch.py", line 52, in fetch
-    data = [self.dataset[idx] for idx in possibly_batched_index]
-  File "Z:\Miniconda\envs\ml-env\lib\site-packages\torch\utils\data\_utils\fetch.py", line 52, in <listcomp>
-    data = [self.dataset[idx] for idx in possibly_batched_index]
-TypeError: 'DataLoader' object is not subscriptable
+  File "Z:\tree-tornado\src\model.py", line 363, in on_validation_epoch_end
+    wandb_image = wandb.Image(
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\wandb\sdk\data_types\image.py", line 266, in __init__
+    self._initialize_from_data(data_or_path, mode, file_type, normalize)
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\wandb\sdk\data_types\image.py", line 438, in _initialize_from_data
+    self._image.save(tmp_path, transparency=None)
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\PIL\Image.py", line 2563, in save
+    fp = builtins.open(filename, "w+b")
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\dbutt7\\AppData\\Local\\Temp\\tmpcgt7bb8rwandb-media\\zcqod4xi.jpg'
+[W 2025-06-14 18:01:37,728] Trial 0 failed with value None.
+Traceback (most recent call last):
+  File "Z:\tree-tornado\src\model.py", line 720, in <module>
+    # n_trials is the total number of hyperparameter combinations to test.
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\optuna\study\study.py", line 475, in optimize
+    _optimize(
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\optuna\study\_optimize.py", line 63, in _optimize
+    _optimize_sequential(
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\optuna\study\_optimize.py", line 160, in _optimize_sequential
+    frozen_trial = _run_trial(study, func, catch)
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\optuna\study\_optimize.py", line 248, in _run_trial
+    raise func_err
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\optuna\study\_optimize.py", line 197, in _run_trial
+    value_or_values = func(trial)
+  File "Z:\tree-tornado\src\model.py", line 627, in objective
+    trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\lightning\pytorch\trainer\trainer.py", line 561, in fit
+    call._call_and_handle_interrupt(
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\lightning\pytorch\trainer\call.py", line 48, in _call_and_handle_interrupt
+    return trainer_fn(*args, **kwargs)
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\lightning\pytorch\trainer\trainer.py", line 599, in _fit_impl
+    self._run(model, ckpt_path=ckpt_path)
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\lightning\pytorch\trainer\trainer.py", line 1012, in _run
+    results = self._run_stage()
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\lightning\pytorch\trainer\trainer.py", line 1056, in _run_stage
+    self.fit_loop.run()
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\lightning\pytorch\loops\fit_loop.py", line 216, in run
+    self.advance()
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\lightning\pytorch\loops\fit_loop.py", line 455, in advance
+    self.epoch_loop.run(self._data_fetcher)
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\lightning\pytorch\loops\training_epoch_loop.py", line 151, in run
+    self.on_advance_end(data_fetcher)
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\lightning\pytorch\loops\training_epoch_loop.py", line 370, in on_advance_end
+    self.val_loop.run()
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\lightning\pytorch\loops\utilities.py", line 179, in _decorator
+    return loop_run(self, *args, **kwargs)
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\lightning\pytorch\loops\evaluation_loop.py", line 152, in run
+    return self.on_run_end()
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\lightning\pytorch\loops\evaluation_loop.py", line 295, in on_run_end
+    self._on_evaluation_epoch_end()
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\lightning\pytorch\loops\evaluation_loop.py", line 374, in _on_evaluation_epoch_end
+    call._call_callback_hooks(trainer, hook_name)
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\lightning\pytorch\trainer\call.py", line 227, in _call_callback_hooks
+    fn(trainer, trainer.lightning_module, *args, **kwargs)
+  File "Z:\tree-tornado\src\model.py", line 363, in on_validation_epoch_end
+    wandb_image = wandb.Image(
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\wandb\sdk\data_types\image.py", line 266, in __init__
+    self._initialize_from_data(data_or_path, mode, file_type, normalize)
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\wandb\sdk\data_types\image.py", line 438, in _initialize_from_data
+    self._image.save(tmp_path, transparency=None)
+  File "Z:\Miniconda\envs\ml-env\lib\site-packages\PIL\Image.py", line 2563, in save
+    fp = builtins.open(filename, "w+b")
+FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\dbutt7\\AppData\\Local\\Temp\\tmpcgt7bb8rwandb-media\\zcqod4xi.jpg'
