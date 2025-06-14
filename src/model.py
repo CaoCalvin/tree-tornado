@@ -679,7 +679,7 @@ if __name__ == '__main__':
     torch.set_float32_matmul_precision('medium')
     pl.seed_everything(42)
 
-    epochs_max = 55
+    epochs_max = 80
     DATASET_BASE_DIR = "dataset_processed"
     IMAGES_DIR = 'images'
     MASKS_DIR = 'masks'
@@ -692,8 +692,8 @@ if __name__ == '__main__':
     TRAIN_MODE = 'train'
     VAL_MODE = 'val'
 
-    MAX_TRIALS = 1
-    MAX_TIME = 3600 * 65  # 65 hours in seconds
+    MAX_TRIALS = 100
+    MAX_TIME = 3600 * 39  # 65 hours in seconds
 
     QUICK_TEST = False
 
